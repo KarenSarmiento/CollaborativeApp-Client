@@ -6,7 +6,7 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.0"
     defaultConfig {
-        applicationId "com.lambdapioneer.webviewexperiments"
+        applicationId "com.karensarmiento.collaborationapp"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 1

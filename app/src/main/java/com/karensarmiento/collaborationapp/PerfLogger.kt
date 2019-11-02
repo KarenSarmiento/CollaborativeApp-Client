@@ -1,4 +1,4 @@
-package com.lambdapioneer.webviewexperiments
+package com.karensarmiento.collaborationapp
 
 /**
  * Simple performance logger using a startEvent/endEvent with string identifier paradigm

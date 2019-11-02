@@ -1,4 +1,4 @@
-package com.lambdapioneer.webviewexperiments
+package com.karensarmiento.collaborationapp
 
 import org.junit.Test
 
