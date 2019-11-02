@@ -1,7 +1,10 @@
 package com.karensarmiento.collaborationapp
 
 import android.os.Bundle
+import android.view.View
+import android.widget.CheckBox
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -28,6 +31,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun onCheckboxClicked(view: View) {
+        if (view is CheckBox) {
+            Toast.makeText(webview.context, "checkbox click!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     /**
      * Will be called whenever the Automerge JS integration deems that the number of cards changed.
      *
@@ -38,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         layout_cards.removeAllViewsInLayout()
         cards.forEach { card ->
             val view = layoutInflater.inflate(R.layout.card, layout_cards, false)
-            view.findViewById<TextView>(R.id.text_title).text = card.title
+            view.findViewById<CheckBox>(R.id.checkbox).text = card.title
             layout_cards.addView(view)
         }
     }
