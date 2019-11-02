@@ -8,7 +8,7 @@ import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class Card(val title: String)
+internal data class Card(val title: String, val completed: Boolean)
 
 internal class Automerge(
     /** The webview to run AutoMerge in. It should not surprisingly restart */
@@ -29,13 +29,21 @@ internal class Automerge(
         loadHtml()
     }
 
-    // adding a card will be done by (async) executing a function call in JS
+    /**
+     * The following functions are done by asynchronously calling the JS sister function.
+     */
     fun addCard(card: Card) =
-        webview.evaluateJavascript("javascript:addCard(\"${card.title}\");") {}
+        webview.evaluateJavascript(
+            "javascript:addCard(\"${card.title}\", \"${card.completed}\");") {}
 
-    // removing a card will be done by (async) executing a function call in JS
     fun removeCard() =
-        webview.evaluateJavascript("javascript:removeCard()") {}
+        webview.evaluateJavascript("javascript:removeCard();") {}
+
+    fun setCardCompleted(index: Int, completed: Boolean) {
+        webview.evaluateJavascript(
+            "javascript:setCardCompleted(\"${index}\", \"${completed}\");") {}
+    }
+
 
     /**
      * Setups the WebView object by enabling JS and adding the JS callbacks. Also enables a remote
@@ -49,7 +57,8 @@ internal class Automerge(
             fun onCardsChange(json: String) {
                 val jsonArray = JSONArray(json) // deserialize JSON into array
                 val cards = List(jsonArray.length()) { // list construction
-                    Card((jsonArray[it] as JSONObject).getString("title"))
+                    Card((jsonArray[it] as JSONObject).getString("title"),
+                        (jsonArray[it] as JSONObject).getBoolean("completed"))
                 }
 
                 onCardsChangeCallback(cards) // callback into UI

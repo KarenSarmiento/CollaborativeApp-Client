@@ -10,14 +10,14 @@ let log = function (text) { document.getElementById('output').textContent += "> 
 
 let doc = Automerge.from({ cards: [] })
 
-let addCard = function (title) {
+let addCard = function (title, completed) {
     event_name = "automerge_addCard"
     ktchannel.startEvent(event_name)
 
     doc = Automerge.change(doc, 'Add card', it => {
-        it.cards.push({ title: title })
+        it.cards.push({ title: title, completed:completed })
     })
-    log("> " + Automerge.save(doc))
+    log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
     ktchannel.endEvent(event_name)
@@ -30,7 +30,20 @@ let removeCard = function () {
     doc = Automerge.change(doc, 'Delete card', it => {
       delete it.cards[0]
     })
-    log("> " + Automerge.save(doc))
+    log("> " + JSON.stringify(doc.cards))
+    ktchannel.onCardsChange(JSON.stringify(doc.cards))
+
+    ktchannel.endEvent(event_name)
+}
+
+let setCardCompleted = function (index, completed) {
+    event_name = "automerge_setCardCompleted"
+    ktchannel.startEvent(event_name)
+
+    doc = Automerge.change(doc, 'Set Completed', it => {
+      it.cards[index].completed = completed
+    })
+    log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
     ktchannel.endEvent(event_name)

@@ -2,9 +2,8 @@ package com.karensarmiento.collaborationapp
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.CheckBox
-import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -23,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_add_card.setOnClickListener {
-            automerge?.addCard(Card(text_field.text.toString()))
+            automerge?.addCard(Card(text_field.text.toString(), false))
         }
 
         button_remove_card.setOnClickListener {
@@ -33,7 +32,8 @@ class MainActivity : AppCompatActivity() {
 
     fun onCheckboxClicked(view: View) {
         if (view is CheckBox) {
-            Toast.makeText(webview.context, "checkbox click!", Toast.LENGTH_SHORT).show()
+            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).getParent() as ViewGroup))
+            automerge?.setCardCompleted(index, view.isChecked)
         }
     }
 
@@ -47,7 +47,11 @@ class MainActivity : AppCompatActivity() {
         layout_cards.removeAllViewsInLayout()
         cards.forEach { card ->
             val view = layoutInflater.inflate(R.layout.card, layout_cards, false)
-            view.findViewById<CheckBox>(R.id.checkbox).text = card.title
+            val item = view.findViewById<CheckBox>(R.id.checkbox)
+            if (item is CheckBox) {
+                item.text = card.title
+                item.isChecked = card.completed
+            }
             layout_cards.addView(view)
         }
     }
