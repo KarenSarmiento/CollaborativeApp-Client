@@ -1,3 +1,11 @@
+/*
+ * This file defines all JS functions that are callable from Kotlin/Android code. For example:
+ *     webview.evaluateJavascript("javascript:<function-call>") {}
+ *
+ * We may also call Kotlin/Android functions in JS (here). This is done by using the 'ktchannel'
+ * interface, which is defined in Automerge.kt.
+ */
+
 let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
 
 let doc = Automerge.from({ cards: [] })
