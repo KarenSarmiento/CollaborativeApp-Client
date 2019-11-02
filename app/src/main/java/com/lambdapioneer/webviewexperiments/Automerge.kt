@@ -33,6 +33,10 @@ internal class Automerge(
     fun addCard(card: Card) =
         webview.evaluateJavascript("javascript:addCard(\"${card.title}\");") {}
 
+    // removing a card will be done by (async) executing a function call in JS
+    fun removeCard() =
+        webview.evaluateJavascript("javascript:removeCard()") {}
+
     /**
      * Setups the WebView object by enabling JS and adding the JS callbacks. Also enables a remote
      * debugging bridge.

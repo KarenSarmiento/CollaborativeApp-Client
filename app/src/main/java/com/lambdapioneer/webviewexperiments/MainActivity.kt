@@ -22,6 +22,10 @@ class MainActivity : AppCompatActivity() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(randomColourWord()))
         }
+
+        button_remove_card.setOnClickListener {
+            automerge?.removeCard()
+        }
     }
 
     /**
