@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_add_card.setOnClickListener {
-            automerge?.addCard(Card(randomColourWord()))
+            automerge?.addCard(Card(text_field.text.toString()))
         }
 
         button_remove_card.setOnClickListener {
@@ -42,13 +42,4 @@ class MainActivity : AppCompatActivity() {
             layout_cards.addView(view)
         }
     }
-
-    private fun randomColourWord(): String =
-        listOf(
-            "green \uD83D\uDC38",
-            "red \uD83E\uDD9C",
-            "purple \uD83D\uDD2E",
-            "white \uD83C\uDFF3️",
-            "green \uD83C\uDF4F"
-        ).random()
 }
