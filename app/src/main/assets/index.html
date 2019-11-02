@@ -1,0 +1,35 @@
+<html>
+
+<head>
+    <script>
+ktchannel.endEvent("html_load")
+ktchannel.startEvent("automerge_load")
+    </script>
+
+    <script src="automerge_dist.js"></script>
+
+    <script>
+ktchannel.endEvent("automerge_load")
+    </script>
+</head>
+
+<body>
+<pre id="output" style="font-family: monospace; white-space: pre-wrap;"></pre>
+<script>
+let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
+
+let doc = Automerge.from({ cards: [] })
+
+let addCard = function (title) {
+    ktchannel.startEvent("automerge_addCard")
+
+    doc = Automerge.change(doc, 'Add card', it => { it.cards.push({ title: title }) })
+    log("> " + Automerge.save(doc))
+    ktchannel.onCardsChange(JSON.stringify(doc.cards))
+
+    ktchannel.endEvent("automerge_addCard")
+}
+</script>
+</body>
+
+</html>
