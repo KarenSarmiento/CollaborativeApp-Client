@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WebViewExperiments</string>
+    <string name="app_name">Collaboration App</string>
     <string name="button_add_card">Add card</string>
     <string name="button_remove_card">Remove card</string>
 </resources>
