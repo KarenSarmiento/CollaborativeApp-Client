@@ -7,7 +7,8 @@ import org.junit.Assert.*
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
- * See [testing documentation](http://d.android.com/tools/testing).
+ * Use these tests to minimize execution time when your tests have no Android framework dependencies
+ * or when you can mock the Android framework dependencies.
  */
 class ExampleUnitTest {
     @Test

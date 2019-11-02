@@ -11,7 +11,8 @@ import org.junit.Assert.*
 /**
  * Instrumented test, which will execute on an Android device.
  *
- * See [testing documentation](http://d.android.com/tools/testing).
+ * Use these tests when writing integration and functional UI tests to automate user interaction,
+ * or when your tests have Android dependencies that mock objects cannot satisfy.
  */
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
