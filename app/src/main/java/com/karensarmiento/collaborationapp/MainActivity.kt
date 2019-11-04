@@ -6,9 +6,12 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
+
 
 class MainActivity : AppCompatActivity() {
 
+    private val stateFileName = "automerge-state.txt"
     private var automerge: Automerge? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,10 +26,25 @@ class MainActivity : AppCompatActivity() {
 
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false))
+            text_field.setText("")
         }
 
         button_remove_card.setOnClickListener {
             automerge?.removeCard()
+        }
+
+        button_store_state.setOnClickListener {
+            automerge?.getDocumentState {
+                val file = File(this.applicationContext.filesDir, stateFileName)
+                file.writeText(it)
+            }
+            automerge?.clearState()
+        }
+
+        button_recover_state.setOnClickListener {
+            val file = File(this.applicationContext.filesDir, stateFileName)
+            val text = file.readText().removeSurrounding("\"")
+            automerge?.setDocumentState(text)
         }
     }
 
