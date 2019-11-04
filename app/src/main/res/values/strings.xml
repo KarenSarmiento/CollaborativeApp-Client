@@ -3,4 +3,6 @@
     <string name="button_add_card">Add TODO</string>
     <string name="button_remove_card">Remove TODO</string>
     <string name="hint_text">Write your todo here...</string>
+    <string name="button_store_state">Store State</string>
+    <string name="button_recover_state">Restore Last Stored State</string>
 </resources>
