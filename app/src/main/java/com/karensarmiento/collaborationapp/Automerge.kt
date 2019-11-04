@@ -39,10 +39,22 @@ internal class Automerge(
     fun removeCard() =
         webview.evaluateJavascript("javascript:removeCard();") {}
 
-    fun setCardCompleted(index: Int, completed: Boolean) {
+    fun setCardCompleted(index: Int, completed: Boolean) =
         webview.evaluateJavascript(
             "javascript:setCardCompleted(\"${index}\", \"${completed}\");") {}
+
+    fun getDocumentState(callbackOnDocState: (String) -> Unit) {
+        webview.evaluateJavascript("javascript:getDocumentState();") {
+            callbackOnDocState(it)
+        }
     }
+
+    // TODO: Protect against dependency injection. All characters should be escaped.
+    fun setDocumentState(docState: String) =
+        webview.evaluateJavascript("javascript:setDocumentState(\"${docState}\");") {}
+
+    fun clearState() =
+        webview.evaluateJavascript("javascript:clearState();") {}
 
 
     /**
