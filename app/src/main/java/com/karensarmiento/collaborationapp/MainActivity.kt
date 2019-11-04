@@ -11,7 +11,7 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    private val stateFileName = "automerge-test-file.txt"
+    private val stateFileName = "automerge-state.txt"
     private var automerge: Automerge? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
 
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false))
+            text_field.setText("")
         }
 
         button_remove_card.setOnClickListener {
