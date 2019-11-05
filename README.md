@@ -1,4 +1,4 @@
-# Collaboration App
+# Collaboration App Client
 
 This repo contains the code for my dissertation project, whereby I implement the security and messaging infrastructure to support collaboration applications. It aims to demonstrate how conflict-free replicated data types (CRDTs) may be used to reassign the responsibility of merging peer updates from the server to the client, and therefore, how end-to-end encryption may be used.
 
