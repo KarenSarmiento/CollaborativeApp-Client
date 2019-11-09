@@ -6,13 +6,15 @@
  * interface, which is defined in Automerge.kt.
  */
 
+// TODO: Change to camel case
+
 let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
 
 let doc = Automerge.from({ cards: [] })
 
 let addCard = function (title, completed) {
-    eventName = "automerge_addCard"
-    ktchannel.startEvent(eventName)
+    event_name = "automerge_addCard"
+    ktchannel.startEvent(event_name)
 
     doc = Automerge.change(doc, 'Add card', it => {
         it.cards.push({ title: title, completed:completed })
@@ -20,12 +22,12 @@ let addCard = function (title, completed) {
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
-    ktchannel.endEvent(eventName)
+    ktchannel.endEvent(event_name)
 }
 
 let removeCard = function () {
-    eventName = "automerge_removeCard"
-    ktchannel.startEvent(eventName)
+    event_name = "automerge_removeCard"
+    ktchannel.startEvent(event_name)
 
     doc = Automerge.change(doc, 'Delete card', it => {
       delete it.cards[0]
@@ -33,12 +35,12 @@ let removeCard = function () {
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
-    ktchannel.endEvent(eventName)
+    ktchannel.endEvent(event_name)
 }
 
 let setCardCompleted = function (index, completed) {
-    eventName = "automerge_setCardCompleted"
-    ktchannel.startEvent(eventName)
+    event_name = "automerge_setCardCompleted"
+    ktchannel.startEvent(event_name)
 
     doc = Automerge.change(doc, 'Set Completed', it => {
       it.cards[index].completed = completed
@@ -46,37 +48,22 @@ let setCardCompleted = function (index, completed) {
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
-    ktchannel.endEvent(eventName)
+    ktchannel.endEvent(event_name)
 }
 
 let getDocumentState = function() {
-    eventName = "automerge_getDocumentState"
-    ktchannel.startEvent(eventName)
-
-    docState = Automerge.save(doc)
+    doc_state = Automerge.save(doc)
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
-    log("* " + docState)
-
-    ktchannel.endEvent(eventName)
-    return docState
+    log("* " + doc_state)
+    return doc_state
 }
 
 let setDocumentState = function(docState) {
-    eventName = "automerge_setDocumentState"
-    ktchannel.startEvent(eventName)
-
     doc = Automerge.load(docState)
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
-
-    ktchannel.endEvent(eventName)
 }
 
 let clearState = function() {
-    eventName = "automerge_clearState"
-    ktchannel.startEvent(eventName)
-
     doc = Automerge.from({ cards: [] })
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
-
-    ktchannel.endEvent(eventName)
 }
