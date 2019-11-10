@@ -11,8 +11,10 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    private val stateFileName = "automerge-state.txt"
-    private var automerge: Automerge? = null
+    companion object {
+        private val stateFileName = "automerge-state.txt"
+        private var automerge: Automerge? = null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
