@@ -11,19 +11,32 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    private val stateFileName = "automerge-state.txt"
-    private var automerge: Automerge? = null
+    companion object {
+        private const val stateFileName = "automerge-state.txt"
+        private var automerge: Automerge? = null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setUpAutomerge()
+        setUpButtonListeners()
+
+        // Allows for the sending of XMPP messages to the Firebase server.
+        FirebaseXMPPConnection().execute()
+
+    }
+
+    private fun setUpAutomerge(){
         // The callback will by default be called by a BG thread; therefore we need to dispatch it
-        // to the UI thread
+        // to the UI thread.
         automerge = Automerge(webview) {
             runOnUiThread { updateCards(it) }
         }
+    }
 
+    private fun setUpButtonListeners() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false))
             text_field.setText("")
@@ -50,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 
     fun onCheckboxClicked(view: View) {
         if (view is CheckBox) {
-            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).getParent() as ViewGroup))
+            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
             automerge?.setCardCompleted(index, view.isChecked)
         }
     }
