@@ -25,6 +25,7 @@ class MainActivity : AppCompatActivity() {
 
         // Allows for the sending of XMPP messages to the Firebase server.
         FirebaseXMPPConnection().execute()
+
     }
 
     private fun setUpAutomerge(){
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 
     fun onCheckboxClicked(view: View) {
         if (view is CheckBox) {
-            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).getParent() as ViewGroup))
+            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
             automerge?.setCardCompleted(index, view.isChecked)
         }
     }

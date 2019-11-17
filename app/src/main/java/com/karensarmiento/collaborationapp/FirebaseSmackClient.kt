@@ -5,9 +5,11 @@ import android.util.Log
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.roster.Roster
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
+import org.json.JSONObject
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
@@ -58,7 +60,36 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
         val username = "${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}"
         xmppConn?.login(username , Utils.SERVER_KEY)
         Log.i(TAG, "User logged in!")
+
+        // Send sample message to self.
+        val dataPayload = HashMap<String, String>()
+        dataPayload["message"] = "This is a sample message :)"
+        val messageId = Utils.getUniqueMessageId()
+        sendMessageToSelf(dataPayload, messageId)
+
         return true
+    }
+
+    // TODO: Move message sending methods outside of AsyncTask?
+    private fun sendMessageToSelf(payload: Map<String, String>, messageId: String) {
+        Utils.onCurrentToken { token ->
+            token?.let { sendMessage(it, messageId, payload) }
+        }
+    }
+
+    private fun sendMessage(to: String, messageId: String, payload: Map<String, String>) {
+        val jsonRequest = createJsonMessage(to, messageId, payload)
+        val request : Stanza = JsonMessageExtension(jsonRequest).toPacket()
+        xmppConn?.sendStanza(request)
+    }
+
+    private fun createJsonMessage(to: String, messageId: String, payload: Map<String, String>): String {
+        // TODO: Make HashMap type stricter (key=String, value=Any)
+        val message = HashMap<Any?, Any?>()
+        message["to"] = to
+        message["message_id"] = messageId
+        message["data"] = payload
+        return JSONObject(message).toString()
     }
 
     override fun onPostExecute(result: Boolean) {
