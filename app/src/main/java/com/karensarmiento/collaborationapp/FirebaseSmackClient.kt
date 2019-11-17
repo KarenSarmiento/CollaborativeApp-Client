@@ -11,7 +11,7 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
-class FirebaseConnection : AsyncTask<Void, Void, Boolean>() {
+class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
 
     companion object {
         private const val TAG = "SmackMessagingClient"
