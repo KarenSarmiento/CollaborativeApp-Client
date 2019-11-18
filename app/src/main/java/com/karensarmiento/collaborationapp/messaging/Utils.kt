@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.messaging
 
 
 import android.util.Log
@@ -16,7 +16,6 @@ object Utils {
     const val FCM_TEST_PORT = 5236
     const val FCM_SERVER_AUTH_CONNECTION = "gcm.googleapis.com"
 
-    // TODO: Find out what these mean.
     const val FCM_ELEMENT_NAME = "gcm"
     const val FCM_NAMESPACE = "google:mobile:data"
     const val SENDER_ID = "849641919488"

@@ -5,6 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
+import com.karensarmiento.collaborationapp.collaboration.Automerge
+import com.karensarmiento.collaborationapp.collaboration.Card
+import com.karensarmiento.collaborationapp.messaging.FirebaseXMPPConnection
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -38,7 +41,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpButtonListeners() {
         button_add_card.setOnClickListener {
-            automerge?.addCard(Card(text_field.text.toString(), false))
+            automerge?.addCard(
+                Card(
+                    text_field.text.toString(),
+                    false
+                )
+            )
             text_field.setText("")
         }
 

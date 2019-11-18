@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.collaboration
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -18,11 +18,13 @@ internal class Automerge(
     private val onCardsChangeCallback: (List<Card>) -> Unit
 ) {
 
-    private val perfLogger = PerfLogger { name, time ->
-        val message = "$name: $time ms"
-        Log.i("PerfLogger", message) // shows up in LogCat
-        Toast.makeText(webview.context, message, Toast.LENGTH_SHORT).show() // shows up in the UI
-    }
+    private val perfLogger =
+        PerfLogger { name, time ->
+            val message = "$name: $time ms"
+            Log.i("PerfLogger", message) // shows up in LogCat
+            Toast.makeText(webview.context, message, Toast.LENGTH_SHORT)
+                .show() // shows up in the UI
+        }
 
     init {
         setupWebview()
@@ -69,8 +71,10 @@ internal class Automerge(
             fun onCardsChange(json: String) {
                 val jsonArray = JSONArray(json) // deserialize JSON into array
                 val cards = List(jsonArray.length()) { // list construction
-                    Card((jsonArray[it] as JSONObject).getString("title"),
-                        (jsonArray[it] as JSONObject).getBoolean("completed"))
+                    Card(
+                        (jsonArray[it] as JSONObject).getString("title"),
+                        (jsonArray[it] as JSONObject).getBoolean("completed")
+                    )
                 }
 
                 onCardsChangeCallback(cards) // callback into UI

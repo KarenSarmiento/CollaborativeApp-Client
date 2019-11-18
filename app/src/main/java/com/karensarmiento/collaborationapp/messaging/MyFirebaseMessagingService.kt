@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.messaging
 
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService

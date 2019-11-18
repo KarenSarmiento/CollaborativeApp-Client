@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.collaboration
 
 /**
  * Simple performance logger using a startEvent/endEvent with string identifier paradigm

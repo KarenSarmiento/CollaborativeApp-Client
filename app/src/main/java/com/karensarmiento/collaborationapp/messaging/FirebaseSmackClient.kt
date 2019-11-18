@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.messaging
 
 import android.os.AsyncTask
 import android.util.Log
@@ -58,7 +58,9 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
 
         // Login to Firebase server
         val username = "${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}"
-        xmppConn?.login(username , Utils.SERVER_KEY)
+        xmppConn?.login(username ,
+            Utils.SERVER_KEY
+        )
         Log.i(TAG, "User logged in!")
 
         // Send sample message to self.
@@ -79,7 +81,9 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
 
     private fun sendMessage(to: String, messageId: String, payload: Map<String, String>) {
         val jsonRequest = createJsonMessage(to, messageId, payload)
-        val request : Stanza = JsonMessageExtension(jsonRequest).toPacket()
+        val request : Stanza = JsonMessageExtension(
+            jsonRequest
+        ).toPacket()
         xmppConn?.sendStanza(request)
     }
 
@@ -89,6 +93,7 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
         message["to"] = to
         message["message_id"] = messageId
         message["data"] = payload
+
         return JSONObject(message).toString()
     }
 

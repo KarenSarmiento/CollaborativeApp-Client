@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.messaging
 
 import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.ExtensionElement
