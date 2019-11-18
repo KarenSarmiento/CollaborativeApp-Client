@@ -11,12 +11,17 @@ import org.json.JSONObject
 internal data class Card(val title: String, val completed: Boolean)
 
 internal class Automerge(
-    /** The webview to run AutoMerge in. It should not surprisingly restart */
+    /** The webview to run Automerge in. It should not surprisingly restart */
     private val webview: WebView,
 
     /** Callback when the list of cards changes. Not guaranteed to be on the UI thread */
     private val onCardsChangeCallback: (List<Card>) -> Unit
 ) {
+
+    companion object {
+        private const val TAG = "Automerge.kt"
+    }
+
 
     private val perfLogger =
         PerfLogger { name, time ->
@@ -33,25 +38,34 @@ internal class Automerge(
 
     /**
      * The following functions are done by asynchronously calling the JS sister function.
+     *
+     * All functions which make changes to state return a JSON summarising the change. This can be
+     * accessed through the use of a functional callback.
      */
-    fun addCard(card: Card) =
+    fun addCard(card: Card, callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript(
-            "javascript:addCard(\"${card.title}\", \"${card.completed}\");") {}
+            "javascript:addCard(\"${card.title}\", \"${card.completed}\");") {
+            callback?.invoke(it)
+        }
 
-    fun removeCard() =
-        webview.evaluateJavascript("javascript:removeCard();") {}
+    fun removeCard(callback: ((String) -> Unit)? = null) =
+        webview.evaluateJavascript("javascript:removeCard();") {
+            callback?.invoke(it)
+        }
 
-    fun setCardCompleted(index: Int, completed: Boolean) =
+    fun setCardCompleted(index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript(
-            "javascript:setCardCompleted(\"${index}\", \"${completed}\");") {}
+            "javascript:setCardCompleted(\"${index}\", \"${completed}\");") {
+            callback?.invoke(it)
+        }
 
-    fun getDocumentState(callbackOnDocState: (String) -> Unit) {
+    fun getDocumentState(callback: (String) -> Unit) {
         webview.evaluateJavascript("javascript:getDocumentState();") {
-            callbackOnDocState(it)
+            callback?.invoke(it)
         }
     }
 
-    // TODO: Protect against dependency injection. All characters should be escaped.
+    // TODO: Protect against javascript injection.
     fun setDocumentState(docState: String) =
         webview.evaluateJavascript("javascript:setDocumentState(\"${docState}\");") {}
 

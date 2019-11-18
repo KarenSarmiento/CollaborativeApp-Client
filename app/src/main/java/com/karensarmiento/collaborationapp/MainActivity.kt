@@ -41,12 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpButtonListeners() {
         button_add_card.setOnClickListener {
-            automerge?.addCard(
-                Card(
-                    text_field.text.toString(),
-                    false
-                )
-            )
+            automerge?.addCard(Card(text_field.text.toString(), false))
             text_field.setText("")
         }
 

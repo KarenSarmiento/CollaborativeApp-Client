@@ -21,6 +21,14 @@ let addCard = function (title, completed) {
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
     ktchannel.endEvent(eventName)
+
+    updateMessage = {
+        "updateType" : "addTodo",
+        "update" : {
+            "label" : title
+        }
+    }
+    return JSON.stringify(updateMessage)
 }
 
 let removeCard = function () {
@@ -34,6 +42,12 @@ let removeCard = function () {
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
     ktchannel.endEvent(eventName)
+
+    updateMessage = {
+        "updateType" : "removeTodo",
+        "update" : {}
+    }
+    return JSON.stringify(updateMessage)
 }
 
 let setCardCompleted = function (index, completed) {
@@ -47,13 +61,22 @@ let setCardCompleted = function (index, completed) {
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
     ktchannel.endEvent(eventName)
+
+    updateMessage = {
+        "updateType" : "setTodoCompleted",
+        "update" : {
+            "index" : index,
+            "completed" : completed
+        }
+    }
+    return JSON.stringify(updateMessage)
 }
 
 let getDocumentState = function() {
-    doc_state = Automerge.save(doc)
+    docState = Automerge.save(doc)
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
-    log("* " + doc_state)
-    return doc_state
+    log("* " + docState)
+    return docState
 }
 
 let setDocumentState = function(docState) {
