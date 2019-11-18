@@ -9,7 +9,7 @@ import java.util.*
 
 object Utils {
 
-    const val TAG = "Utils"
+    private const val TAG = "Utils"
 
     const val FCM_SERVER = "fcm-xmpp.googleapis.com"
     const val FCM_PROD_PORT = 5235
