@@ -7,7 +7,7 @@ import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
-import com.karensarmiento.collaborationapp.messaging.FirebaseXMPPMessagingService
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_send_sample_message.setOnClickListener {
-            FirebaseXMPPMessagingService.sendMessage()
+            FirebaseMessageSendingService.sendMessage()
         }
     }
 

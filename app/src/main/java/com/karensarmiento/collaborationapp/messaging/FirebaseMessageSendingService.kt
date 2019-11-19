@@ -13,13 +13,17 @@ import org.json.JSONObject
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
-object FirebaseXMPPMessagingService {
+/**
+ * This makes use of Smack in order to open an XMPP connection with the Firebase server and send
+ * messages.
+ */
+object FirebaseMessageSendingService {
     private const val TAG = "FirebaseXMPPMessaging"
     private var xmppConn: XMPPTCPConnection? = null
     private val buffer = ArrayList<String>()
 
     init {
-        InitialiseFirebaseXMPPConnection().execute()
+        InitialiseFirebaseConnection().execute()
     }
 
     // TODO: Send JSON instead of sample message.
@@ -27,7 +31,7 @@ object FirebaseXMPPMessagingService {
         SendMessageToFirebase().execute()
     }
 
-    private class InitialiseFirebaseXMPPConnection : AsyncTask<Void, Void, Void>() {
+    private class InitialiseFirebaseConnection : AsyncTask<Void, Void, Void>() {
         override fun doInBackground(vararg params: Void?): Void? {
             // Allow connection to be resumed if it is ever lost.
             XMPPTCPConnection.setUseStreamManagementResumptiodDefault(true)

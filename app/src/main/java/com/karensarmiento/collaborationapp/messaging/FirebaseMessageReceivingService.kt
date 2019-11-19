@@ -4,7 +4,12 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
-class MyFirebaseMessagingService : FirebaseMessagingService() {
+/**
+ * This makes use of the Google FirebaseMessagingService to:
+ * 1) Provide callbacks upon message receipt.
+ * 2) Handle client registration tokens.
+ */
+class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
     /**
      * Called when message is received.
