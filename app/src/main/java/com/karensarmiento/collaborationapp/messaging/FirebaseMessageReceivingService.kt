@@ -11,6 +11,10 @@ import com.google.firebase.messaging.RemoteMessage
  */
 class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
+    companion object {
+        private const val TAG = "FirebaseReceivingService"
+    }
+
     /**
      * Called when message is received.
      *
@@ -50,9 +54,5 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         Log.d(TAG, "Refreshed token: $token")
         // TODO: Notify fellow clients of updated registration ID.
-    }
-
-    companion object {
-        private const val TAG = "MyFirebaseMsgService"
     }
 }

@@ -18,20 +18,20 @@ import javax.net.ssl.SSLContext
  * messages.
  */
 object FirebaseMessageSendingService {
-    private const val TAG = "FirebaseXMPPMessaging"
+    private const val TAG = "FirebaseSendingService"
     private var xmppConn: XMPPTCPConnection? = null
     private val buffer = ArrayList<String>()
 
     init {
-        InitialiseFirebaseConnection().execute()
+        FirebaseConnectionInitialiser().execute()
     }
 
     // TODO: Send JSON instead of sample message.
     fun sendMessage() {
-        SendMessageToFirebase().execute()
+        FirebaseMessageSender().execute()
     }
 
-    private class InitialiseFirebaseConnection : AsyncTask<Void, Void, Void>() {
+    private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {
         override fun doInBackground(vararg params: Void?): Void? {
             // Allow connection to be resumed if it is ever lost.
             XMPPTCPConnection.setUseStreamManagementResumptiodDefault(true)
@@ -41,7 +41,7 @@ object FirebaseMessageSendingService {
             val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, null, SecureRandom())
 
-            // Specify connection configurations
+            // Specify connection configurations.
             Log.i(TAG, "Connecting to the FCM XMPP Server...")
             val config = XMPPTCPConnectionConfiguration.builder()
                 .setServiceName(Utils.FCM_SERVER)
@@ -56,29 +56,30 @@ object FirebaseMessageSendingService {
 
             // Connect
             xmppConn = XMPPTCPConnection(config)
-            xmppConn?.connect()
+            xmppConn?.let {
+                it.connect()
 
-            // Allow reconnection to be automatic.
-            ReconnectionManager.getInstanceFor(xmppConn).enableAutomaticReconnection()
+                // Allow reconnection to be automatic.
+                ReconnectionManager.getInstanceFor(it).enableAutomaticReconnection()
 
-            // Disable Roster (contact list). This will be managed directly with Firebase.
-            Roster.getInstanceFor(xmppConn).isRosterLoadedAtLogin = false
+                // Disable Roster (contact list). This will be managed directly with Firebase.
+                Roster.getInstanceFor(it).isRosterLoadedAtLogin = false
 
-            // FCM requires a SASL PLAIN authentication mechanism.
-            SASLAuthentication.unBlacklistSASLMechanism("PLAIN")
-            SASLAuthentication.blacklistSASLMechanism("DIGEST-MD5")
+                // FCM requires a SASL PLAIN authentication mechanism.
+                SASLAuthentication.unBlacklistSASLMechanism("PLAIN")
+                SASLAuthentication.blacklistSASLMechanism("DIGEST-MD5")
 
-            // Login to Firebase server
-            // Login to Firebase server
-            val username = "${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}"
-            xmppConn?.login(username, Utils.SERVER_KEY)
-            Log.i(TAG, "User logged in!")
+                // Login to Firebase server.
+                val username = "${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}"
+                it.login(username, Utils.SERVER_KEY)
+                Log.i(TAG, "Connected to the FCM XMPP Server!")
+            }
 
             return null
         }
     }
 
-    private class SendMessageToFirebase : AsyncTask<Void, Void, Void>() {
+    private class FirebaseMessageSender : AsyncTask<Void, Void, Void>() {
         override fun doInBackground(vararg params: Void?): Void? {
             sendSampleMessageToSelf()
             return null
@@ -114,5 +115,4 @@ object FirebaseMessageSendingService {
             return JSONObject(message).toString()
         }
     }
-
 }

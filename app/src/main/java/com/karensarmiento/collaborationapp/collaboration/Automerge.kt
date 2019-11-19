@@ -44,9 +44,13 @@ internal class Automerge(
      */
     fun addCard(card: Card, callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript(
-            "javascript:addCard(\"${card.title}\", \"${card.completed}\");") {
+            // TODO: Protect against javascript injection.
+            "javascript:addCard(\"${card.title}\", ${card.completed});") {
             callback?.invoke(it)
         }
+
+    fun setDocumentState(docState: String) =
+        webview.evaluateJavascript("javascript:setDocumentState(\"${docState}\");") {}
 
     fun removeCard(callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript("javascript:removeCard();") {
@@ -55,7 +59,7 @@ internal class Automerge(
 
     fun setCardCompleted(index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript(
-            "javascript:setCardCompleted(\"${index}\", \"${completed}\");") {
+            "javascript:setCardCompleted(\"${index}\", ${completed});") {
             callback?.invoke(it)
         }
 
@@ -64,10 +68,6 @@ internal class Automerge(
             callback?.invoke(it)
         }
     }
-
-    // TODO: Protect against javascript injection.
-    fun setDocumentState(docState: String) =
-        webview.evaluateJavascript("javascript:setDocumentState(\"${docState}\");") {}
 
     fun clearState() =
         webview.evaluateJavascript("javascript:clearState();") {}
