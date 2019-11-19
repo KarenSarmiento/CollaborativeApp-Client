@@ -26,9 +26,8 @@ class MainActivity : AppCompatActivity() {
         setUpAutomerge()
         setUpButtonListeners()
 
-        // Allows for the sending of XMPP messages to the Firebase server.
+        // Send sample message
         FirebaseXMPPConnection().execute()
-
     }
 
     private fun setUpAutomerge(){

@@ -13,14 +13,22 @@ import org.json.JSONObject
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
-class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
+class FirebaseXMPPConnection : AsyncTask<Void, Void, Void>() {
 
     companion object {
         private const val TAG = "SmackMessagingClient"
         private var xmppConn: XMPPTCPConnection? = null
+//        private val buffer = ArrayList<String>()
     }
 
-    override fun doInBackground(vararg params: Void): Boolean? {
+    override fun doInBackground(vararg params: Void?): Void? {
+        if (xmppConn == null)
+            connectToFirebase()
+        sendSampleMessageToSelf()
+        return null
+    }
+
+    private fun connectToFirebase() {
         // Allow connection to be resumed if it is ever lost.
         XMPPTCPConnection.setUseStreamManagementResumptiodDefault(true)
         XMPPTCPConnection.setUseStreamManagementDefault(true)
@@ -58,22 +66,15 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
 
         // Login to Firebase server
         val username = "${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}"
-        xmppConn?.login(username ,
-            Utils.SERVER_KEY
-        )
+        xmppConn?.login(username, Utils.SERVER_KEY)
         Log.i(TAG, "User logged in!")
-
-        // Send sample message to self.
-        val dataPayload = HashMap<String, String>()
-        dataPayload["message"] = "This is a sample message :)"
-        val messageId = Utils.getUniqueMessageId()
-        sendMessageToSelf(dataPayload, messageId)
-
-        return true
     }
 
-    // TODO: Move message sending methods outside of AsyncTask?
-    private fun sendMessageToSelf(payload: Map<String, String>, messageId: String) {
+    private fun sendSampleMessageToSelf() {
+        val payload = HashMap<String, String>()
+        payload["message"] = "This is a sample message :)"
+        val messageId = Utils.getUniqueMessageId()
+
         Utils.onCurrentToken { token ->
             token?.let { sendMessage(it, messageId, payload) }
         }
@@ -81,9 +82,7 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
 
     private fun sendMessage(to: String, messageId: String, payload: Map<String, String>) {
         val jsonRequest = createJsonMessage(to, messageId, payload)
-        val request : Stanza = JsonMessageExtension(
-            jsonRequest
-        ).toPacket()
+        val request : Stanza = JsonMessageExtension(jsonRequest).toPacket()
         xmppConn?.sendStanza(request)
     }
 
@@ -97,8 +96,6 @@ class FirebaseXMPPConnection : AsyncTask<Void, Void, Boolean>() {
         return JSONObject(message).toString()
     }
 
-    override fun onPostExecute(result: Boolean) {
-        super.onPostExecute(result)
-        Log.i(TAG, "Connecting to FCM XMPP server complete!")
-    }
+
+
 }
