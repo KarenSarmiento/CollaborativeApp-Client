@@ -49,6 +49,12 @@
         android:layout_height="wrap_content"
         android:text="@string/button_recover_state" />
 
+    <Button
+        android:id="@+id/button_send_sample_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_send_sample_message" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">

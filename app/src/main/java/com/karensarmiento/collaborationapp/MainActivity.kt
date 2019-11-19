@@ -7,7 +7,7 @@ import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
-import com.karensarmiento.collaborationapp.messaging.FirebaseXMPPConnection
+import com.karensarmiento.collaborationapp.messaging.FirebaseXMPPMessagingService
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -25,9 +25,6 @@ class MainActivity : AppCompatActivity() {
 
         setUpAutomerge()
         setUpButtonListeners()
-
-        // Send sample message
-        FirebaseXMPPConnection().execute()
     }
 
     private fun setUpAutomerge(){
@@ -60,6 +57,10 @@ class MainActivity : AppCompatActivity() {
             val file = File(this.applicationContext.filesDir, stateFileName)
             val text = file.readText().removeSurrounding("\"")
             automerge?.setDocumentState(text)
+        }
+
+        button_send_sample_message.setOnClickListener {
+            FirebaseXMPPMessagingService.sendMessage()
         }
     }
 
