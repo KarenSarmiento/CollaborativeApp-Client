@@ -6,9 +6,31 @@
  * interface, which is defined in Automerge.kt.
  */
 
+const updateTypes = {
+    ADD_TODO: "addTodo",
+    REMOVE_TODO: "removeTodo",
+    UPDATE_COMPLETED: "updateCompleted"
+}
+
 let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
 
 let doc = Automerge.from({ cards: [] })
+
+let applyJsonUpdate = function(jsonString) {
+    jsonUpdate = JSON.parse(jsonString)
+    switch(jsonUpdate.updateType) {
+        case updateTypes.ADD_TODO:
+            addCard(jsonUpdate.update.label, false)
+            break;
+        case updateTypes.REMOVE_TODO:
+            removeCard()
+            break;
+        case updateTypes.UPDATE_COMPLETED:
+            // TODO
+            break;
+    }
+
+}
 
 let addCard = function (title, completed) {
     eventName = "automerge_addCard"
@@ -70,21 +92,4 @@ let setCardCompleted = function (index, completed) {
         }
     }
     return JSON.stringify(updateMessage)
-}
-
-let getDocumentState = function() {
-    docState = Automerge.save(doc)
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
-    log("* " + docState)
-    return docState
-}
-
-let setDocumentState = function(docState) {
-    doc = Automerge.load(docState)
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
-}
-
-let clearState = function() {
-    doc = Automerge.from({ cards: [] })
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
 }

@@ -49,9 +49,6 @@ internal class Automerge(
             callback?.invoke(it)
         }
 
-    fun setDocumentState(docState: String) =
-        webview.evaluateJavascript("javascript:setDocumentState(\"${docState}\");") {}
-
     fun removeCard(callback: ((String) -> Unit)? = null) =
         webview.evaluateJavascript("javascript:removeCard();") {
             callback?.invoke(it)
@@ -63,15 +60,9 @@ internal class Automerge(
             callback?.invoke(it)
         }
 
-    fun getDocumentState(callback: (String) -> Unit) {
-        webview.evaluateJavascript("javascript:getDocumentState();") {
-            callback?.invoke(it)
-        }
-    }
-
-    fun clearState() =
-        webview.evaluateJavascript("javascript:clearState();") {}
-
+    fun applyJsonUpdate(jsonUpdate: String) =
+        webview.evaluateJavascript(
+            "javascript:applyJsonUpdate($jsonUpdate);") {}
 
     /**
      * Setups the WebView object by enabling JS and adding the JS callbacks. Also enables a remote

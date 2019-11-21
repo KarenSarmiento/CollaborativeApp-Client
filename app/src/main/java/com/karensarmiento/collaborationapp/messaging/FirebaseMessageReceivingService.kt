@@ -12,7 +12,7 @@ import com.google.firebase.messaging.RemoteMessage
 class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
     companion object {
-        private const val TAG = "FirebaseReceivingService"
+        private const val TAG = "FirebaseReceiptService"
     }
 
     /**

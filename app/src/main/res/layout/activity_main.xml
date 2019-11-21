@@ -38,12 +38,6 @@
         android:text="@string/button_remove_card" />
 
     <Button
-        android:id="@+id/button_store_state"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/button_store_state" />
-
-    <Button
         android:id="@+id/button_recover_state"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

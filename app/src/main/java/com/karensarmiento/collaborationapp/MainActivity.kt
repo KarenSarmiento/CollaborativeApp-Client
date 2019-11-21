@@ -1,6 +1,7 @@
 package com.karensarmiento.collaborationapp
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
@@ -9,13 +10,16 @@ import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
 import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        private const val stateFileName = "automerge-state.txt"
+        private const val TAG = "MainActivity"
+        private const val localHistoryFileName = "automerge-state.txt"
+        private var localHistory: File? = null
         private var automerge: Automerge? = null
     }
 
@@ -25,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
         setUpAutomerge()
         setUpButtonListeners()
+        localHistory = File(this.applicationContext.filesDir, localHistoryFileName)
+        localHistory?.writeText("")
     }
 
     private fun setUpAutomerge(){
@@ -37,26 +43,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpButtonListeners() {
         button_add_card.setOnClickListener {
-            automerge?.addCard(Card(text_field.text.toString(), false))
+            automerge?.addCard(Card(text_field.text.toString(), false)) {
+                appendJsonToLocalHistory(it)
+            }
             text_field.setText("")
         }
 
         button_remove_card.setOnClickListener {
-            automerge?.removeCard()
-        }
-
-        button_store_state.setOnClickListener {
-            automerge?.getDocumentState {
-                val file = File(this.applicationContext.filesDir, stateFileName)
-                file.writeText(it)
+            automerge?.removeCard {
+                appendJsonToLocalHistory(it)
             }
-            automerge?.clearState()
         }
 
         button_recover_state.setOnClickListener {
-            val file = File(this.applicationContext.filesDir, stateFileName)
-            val text = file.readText().removeSurrounding("\"")
-            automerge?.setDocumentState(text)
+            val updates = localHistory?.readLines()
+            updates?.let {
+                for (jsonUpdate in it) {
+                    automerge?.applyJsonUpdate(jsonUpdate)
+                    Log.i(TAG, "Updated state with: $jsonUpdate")
+                }
+            }
         }
 
         button_send_sample_message.setOnClickListener {
@@ -67,7 +73,9 @@ class MainActivity : AppCompatActivity() {
     fun onCheckboxClicked(view: View) {
         if (view is CheckBox) {
             val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
-            automerge?.setCardCompleted(index, view.isChecked)
+            automerge?.setCardCompleted(index, view.isChecked) {
+                appendJsonToLocalHistory(it)
+            }
         }
     }
 
@@ -88,5 +96,9 @@ class MainActivity : AppCompatActivity() {
             }
             layout_cards.addView(view)
         }
+    }
+
+    private fun appendJsonToLocalHistory(json : String) {
+        localHistory?.appendText("$json\n")
     }
 }
