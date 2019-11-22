@@ -9,8 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
+import com.karensarmiento.collaborationapp.messaging.Utils
 import kotlinx.android.synthetic.main.activity_main.*
-import org.json.JSONObject
 import java.io.File
 
 
@@ -66,7 +66,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_send_sample_message.setOnClickListener {
-            FirebaseMessageSendingService.sendMessage()
+            Utils.onCurrentToken{
+                it?.let {
+                    FirebaseMessageSendingService.sendMessage(it, "Sample message!")
+                }
+            }
         }
     }
 

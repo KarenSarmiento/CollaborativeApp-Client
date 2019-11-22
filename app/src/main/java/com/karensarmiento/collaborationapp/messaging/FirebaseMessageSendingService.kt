@@ -26,9 +26,10 @@ object FirebaseMessageSendingService {
         FirebaseConnectionInitialiser().execute()
     }
 
-    // TODO: Send JSON instead of sample message.
-    fun sendMessage() {
-        FirebaseMessageSender().execute()
+    fun sendMessage(toToken: String, payload: String) {
+        // TODO: Use messageIds to ensure messages are sent when implementing buffering.
+        val messageId = Utils.getUniqueMessageId()
+        FirebaseMessageSender().execute(toToken, messageId, payload)
     }
 
     private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {
@@ -79,40 +80,32 @@ object FirebaseMessageSendingService {
         }
     }
 
-    private class FirebaseMessageSender : AsyncTask<Void, Void, Void>() {
-        override fun doInBackground(vararg params: Void?): Void? {
-            sendSampleMessageToSelf()
+    private class FirebaseMessageSender : AsyncTask<String, Void, Void>() {
+        override fun doInBackground(vararg params: String): Void? {
+            val toToken = params[0]
+            val messageId = params[1]
+            val payload = params[2]
+
+            val xmppMessage = createXMPPMessage(toToken, messageId, payload)
+            xmppConn?.let {
+                it.sendStanza(xmppMessage)
+                Log.i(TAG, "Sent XMPP Message.")
+            }
             return null
         }
 
-        private fun sendSampleMessageToSelf() {
-            val payload = HashMap<String, String>()
-            payload["message"] = "This is a sample message :)"
-            val messageId = Utils.getUniqueMessageId()
+        private fun createXMPPMessage(to: String, messageId: String, payload: String): Stanza {
+            val payloadMap = HashMap<String, String>()
+            payloadMap["message"] = payload
 
-            Utils.onCurrentToken { token ->
-                token?.let { sendMessage(it, messageId, payload) }
-            }
-        }
-
-        private fun sendMessage(to: String, messageId: String, payload: Map<String, String>) {
-            val jsonRequest = createJsonMessage(to, messageId, payload)
-            val request: Stanza = JsonMessageExtension(jsonRequest).toPacket()
-            xmppConn?.sendStanza(request)
-        }
-
-        private fun createJsonMessage(
-            to: String,
-            messageId: String,
-            payload: Map<String, String>
-        ): String {
-            // TODO: Make HashMap type stricter (key=String, value=Any)
             val message = HashMap<Any?, Any?>()
             message["to"] = to
             message["message_id"] = messageId
-            message["data"] = payload
+            message["data"] = payloadMap
 
-            return JSONObject(message).toString()
+            val jsonRequest = JSONObject(message).toString()
+            return FcmMessageExtension(jsonRequest).toPacket()
+
         }
     }
 }
