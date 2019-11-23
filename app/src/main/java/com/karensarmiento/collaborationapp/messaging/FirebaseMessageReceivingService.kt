@@ -3,6 +3,8 @@ package com.karensarmiento.collaborationapp.messaging
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import android.content.Intent
+
 
 /**
  * This makes use of the Google FirebaseMessagingService to:
@@ -23,14 +25,17 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.d(TAG, "From: ${remoteMessage.from}")
 
-        // Check if message contains a data payload (occurs whether app is in foreground or
-        // background.
+        // Check to see if has data payload (occurs if app is in foreground or background).
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Message data payload: " + remoteMessage.data)
+
+            val updateIntent = Intent()
+            updateIntent.putExtra(Utils.JSON_UPDATE, remoteMessage.data["message"])
+            updateIntent.action = "ACTION_ACTIVITY"
+            sendBroadcast(updateIntent)
         }
 
-        // Check if message contains a notification payload. Can only occur if app is in the
-        // background.
+        // Check to see if has notification payload (occurs only if app is in background).
         remoteMessage.notification?.let {
             Log.d(TAG, "Message Notification Body: ${it.body}")
         }

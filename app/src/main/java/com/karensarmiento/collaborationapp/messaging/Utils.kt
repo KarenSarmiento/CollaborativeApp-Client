@@ -21,6 +21,8 @@ object Utils {
     const val SENDER_ID = "849641919488"
     const val SERVER_KEY = "AAAAxdKa1AA:APA91bEPghKBhTv8xaQnzP6NFaLiuUJmg4sbI92__5CkoIe8kBAFXYDGH72RX_LKcQ3TixxkHuVELDSHCQt9SWW_wyJVEVmYULaLI6b9nim7CSJkIJKSoKJos4KPmk019jP-GxKY4d_C"
 
+    const val JSON_UPDATE = "JSON_UPDATE"
+
     fun getUniqueMessageId(): String {
         return UUID.randomUUID().toString()
     }

@@ -5,5 +5,4 @@
     <string name="hint_text">Write your todo here...</string>
     <string name="button_store_state">Store State</string>
     <string name="button_recover_state">Restore Last Stored State</string>
-    <string name="button_send_sample_message">Send Sample Message To Self</string>
 </resources>

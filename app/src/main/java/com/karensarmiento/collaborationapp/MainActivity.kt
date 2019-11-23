@@ -12,15 +12,32 @@ import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingServi
 import com.karensarmiento.collaborationapp.messaging.Utils
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
+import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
+        private var automerge: Automerge? = null
         private const val localHistoryFileName = "automerge-state.txt"
         private var localHistory: File? = null
-        private var automerge: Automerge? = null
+
+        /**
+         * The activityReceiver object receives messages from FirebaseMessagingReceivingService.
+         *
+         * Whenever a message is received, we update the local state.
+         */
+        private val activityReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val updateJson = intent.getStringExtra(Utils.JSON_UPDATE)
+                Log.i(TAG, "Bundle: $updateJson")
+                automerge?.applyJsonUpdate(updateJson)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,8 +46,8 @@ class MainActivity : AppCompatActivity() {
 
         setUpAutomerge()
         setUpButtonListeners()
-        localHistory = File(this.applicationContext.filesDir, localHistoryFileName)
-        localHistory?.writeText("")
+        setUpLocalFileState()
+        registerBroadcastReceiver()
     }
 
     private fun setUpAutomerge(){
@@ -45,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false)) {
                 appendJsonToLocalHistory(it)
+                sendJsonUpdateToSelf(it)
             }
             text_field.setText("")
         }
@@ -52,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         button_remove_card.setOnClickListener {
             automerge?.removeCard {
                 appendJsonToLocalHistory(it)
+                sendJsonUpdateToSelf(it)
             }
         }
 
@@ -64,14 +83,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
-        button_send_sample_message.setOnClickListener {
-            Utils.onCurrentToken{
-                it?.let {
-                    FirebaseMessageSendingService.sendMessage(it, "Sample message!")
-                }
-            }
-        }
     }
 
     fun onCheckboxClicked(view: View) {
@@ -79,7 +90,20 @@ class MainActivity : AppCompatActivity() {
             val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
             automerge?.setCardCompleted(index, view.isChecked) {
                 appendJsonToLocalHistory(it)
+                sendJsonUpdateToSelf(it)
             }
+        }
+    }
+
+    private fun setUpLocalFileState() {
+        localHistory = File(this.applicationContext.filesDir, localHistoryFileName)
+        localHistory?.writeText("")
+    }
+
+    private fun registerBroadcastReceiver() {
+        activityReceiver?.let {
+            val intentFilter = IntentFilter("ACTION_ACTIVITY")
+            registerReceiver(activityReceiver, intentFilter)
         }
     }
 
@@ -104,5 +128,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun appendJsonToLocalHistory(json : String) {
         localHistory?.appendText("$json\n")
+    }
+
+    // TODO: Send to peers in collaboration group, not self.
+    private fun sendJsonUpdateToSelf(jsonUpdate: String) {
+        Utils.onCurrentToken {
+            it?.let {
+                FirebaseMessageSendingService.sendMessage(it, jsonUpdate)
+            }
+        }
     }
 }
