@@ -23,6 +23,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        // TODO: Ignore messages sent from self.
         Log.d(TAG, "From: ${remoteMessage.from}")
 
         // Check to see if has data payload (occurs if app is in foreground or background).

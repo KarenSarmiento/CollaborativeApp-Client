@@ -26,10 +26,10 @@ object FirebaseMessageSendingService {
         FirebaseConnectionInitialiser().execute()
     }
 
-    fun sendMessage(toToken: String, payload: String) {
+    fun sendMessageToTopic(topic: String, payload: String) {
         // TODO: Use messageIds to ensure messages are sent when implementing buffering.
         val messageId = Utils.getUniqueMessageId()
-        FirebaseMessageSender().execute(toToken, messageId, payload)
+        FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
     }
 
     private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {

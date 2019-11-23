@@ -16,6 +16,8 @@ import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.widget.Toast
+import com.google.firebase.messaging.FirebaseMessaging
 
 
 class MainActivity : AppCompatActivity() {
@@ -25,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         private var automerge: Automerge? = null
         private const val localHistoryFileName = "automerge-state.txt"
         private var localHistory: File? = null
-
+        private const val topic = "myTestTopic"
     }
 
     /**
@@ -50,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         setUpButtonListeners()
         setUpLocalFileState()
         registerBroadcastReceiver()
+        subscribeToFcmTopic(topic)
     }
 
     private fun setUpAutomerge(){
@@ -64,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false)) {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToSelf(it)
+                sendJsonUpdateToTopic(it)
             }
             text_field.setText("")
         }
@@ -72,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         button_remove_card.setOnClickListener {
             automerge?.removeCard {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToSelf(it)
+                sendJsonUpdateToTopic(it)
             }
         }
 
@@ -92,7 +95,7 @@ class MainActivity : AppCompatActivity() {
             val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
             automerge?.setCardCompleted(index, view.isChecked) {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToSelf(it)
+                sendJsonUpdateToTopic(it)
             }
         }
     }
@@ -107,6 +110,14 @@ class MainActivity : AppCompatActivity() {
             val intentFilter = IntentFilter("ACTION_ACTIVITY")
             registerReceiver(activityReceiver, intentFilter)
         }
+    }
+
+    private fun subscribeToFcmTopic(topic: String) {
+        FirebaseMessaging.getInstance().subscribeToTopic(topic)
+            .addOnCompleteListener { task ->
+                var msg = "You have subscribed to $topic!"
+                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+            }
     }
 
     /**
@@ -132,12 +143,7 @@ class MainActivity : AppCompatActivity() {
         localHistory?.appendText("$json\n")
     }
 
-    // TODO: Send to peers in collaboration group, not self.
-    private fun sendJsonUpdateToSelf(jsonUpdate: String) {
-        Utils.onCurrentToken {
-            it?.let {
-                FirebaseMessageSendingService.sendMessage(it, jsonUpdate)
-            }
-        }
+    private fun sendJsonUpdateToTopic(jsonUpdate: String) {
+        FirebaseMessageSendingService.sendMessageToTopic(topic, jsonUpdate)
     }
 }
