@@ -26,17 +26,19 @@ class MainActivity : AppCompatActivity() {
         private const val localHistoryFileName = "automerge-state.txt"
         private var localHistory: File? = null
 
-        /**
-         * The activityReceiver object receives messages from FirebaseMessagingReceivingService.
-         *
-         * Whenever a message is received, we update the local state.
-         */
-        private val activityReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val updateJson = intent.getStringExtra(Utils.JSON_UPDATE)
-                Log.i(TAG, "Bundle: $updateJson")
-                automerge?.applyJsonUpdate(updateJson)
-            }
+    }
+
+    /**
+     * The activityReceiver object receives messages from FirebaseMessagingReceivingService.
+     *
+     * Whenever a message is received, we update the local state.
+     */
+    private val activityReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val updateJson = intent.getStringExtra(Utils.JSON_UPDATE)
+            Log.i(TAG, "Bundle: $updateJson")
+            automerge?.applyJsonUpdate(updateJson)
+            appendJsonToLocalHistory(updateJson)
         }
     }
 
