@@ -35,6 +35,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:20.0.1'
     implementation "org.igniterealtime.smack:smack-android-extensions:4.1.0"
     implementation "org.igniterealtime.smack:smack-tcp:4.1.0"
+    implementation "androidx.preference:preference-ktx:1.1.0"
 }
 
 apply plugin: 'com.google.gms.google-services'

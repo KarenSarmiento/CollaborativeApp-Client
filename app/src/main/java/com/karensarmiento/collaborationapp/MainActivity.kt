@@ -19,11 +19,11 @@ import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
 
-
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
+        internal var appContext: Context?  = null
         private var automerge: Automerge? = null
         private const val localHistoryFileName = "automerge-state.txt"
         private var localHistory: File? = null
@@ -46,8 +46,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        appContext = applicationContext
 
+        setContentView(R.layout.activity_main)
         setUpAutomerge()
         setUpButtonListeners()
         setUpLocalFileState()
@@ -100,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     private fun setUpLocalFileState() {
         localHistory = File(this.applicationContext.filesDir, localHistoryFileName)
         localHistory?.writeText("")
@@ -120,12 +122,7 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    /**
-     * Will be called whenever the Automerge JS integration deems that the number of cards changed.
-     *
-     * TODO: This is currently quite inefficient as the entire layout gets re-created.
-     * Better would be e.g. using a recyclerview with a proper adapter
-     */
+    // TODO: Recreating cards is inefficient. Use RecyclerView with a proper adapter instead.
     private fun updateCards(cards: List<Card>) {
         layout_cards.removeAllViewsInLayout()
         cards.forEach { card ->

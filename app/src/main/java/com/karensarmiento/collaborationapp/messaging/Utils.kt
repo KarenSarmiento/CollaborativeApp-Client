@@ -2,14 +2,15 @@ package com.karensarmiento.collaborationapp.messaging
 
 
 import android.util.Log
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.firebase.iid.FirebaseInstanceId
+import com.karensarmiento.collaborationapp.MainActivity
+import java.io.File
 import java.util.*
 
 
 object Utils {
 
     private const val TAG = "Utils"
+    val APP_USER_ID: String = setAppUserId()
 
     const val FCM_SERVER = "fcm-xmpp.googleapis.com"
     const val FCM_PROD_PORT = 5235
@@ -23,24 +24,20 @@ object Utils {
 
     const val JSON_UPDATE = "JSON_UPDATE"
 
-    fun getUniqueMessageId(): String {
+    private fun setAppUserId(): String {
+        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id")
+        if(userIdFile.exists()) {
+            Log.i(TAG, "File")
+            return userIdFile.readText()
+        }
+        Log.i(TAG, "No file")
+        val newId = getUniqueId()
+        userIdFile.writeText(newId)
+
+        return newId
+    }
+
+    fun getUniqueId(): String {
         return UUID.randomUUID().toString()
     }
-
-    fun onCurrentToken(callback : (String?) -> Unit) {
-        FirebaseInstanceId.getInstance().instanceId
-            .addOnCompleteListener(OnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    Log.w(TAG, "getInstanceId failed", task.exception)
-                    return@OnCompleteListener
-                }
-
-                // Get new Instance ID token
-                val token = task.result?.token
-
-                // Apply callback
-                callback(token)
-            })
-    }
-
 }

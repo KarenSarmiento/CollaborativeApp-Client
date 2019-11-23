@@ -28,7 +28,7 @@ object FirebaseMessageSendingService {
 
     fun sendMessageToTopic(topic: String, payload: String) {
         // TODO: Use messageIds to ensure messages are sent when implementing buffering.
-        val messageId = Utils.getUniqueMessageId()
+        val messageId = Utils.getUniqueId()
         FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
     }
 
@@ -97,6 +97,7 @@ object FirebaseMessageSendingService {
         private fun createXMPPMessage(to: String, messageId: String, payload: String): Stanza {
             val payloadMap = HashMap<String, String>()
             payloadMap["message"] = payload
+            payloadMap["fromUserId"] = Utils.APP_USER_ID
 
             val message = HashMap<Any?, Any?>()
             message["to"] = to
