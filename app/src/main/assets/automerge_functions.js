@@ -9,7 +9,7 @@
 const updateTypes = {
     ADD_TODO: "addTodo",
     REMOVE_TODO: "removeTodo",
-    UPDATE_COMPLETED: "updateCompleted"
+    UPDATE_COMPLETED: "setTodoCompleted"
 }
 
 let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
@@ -26,7 +26,7 @@ let applyJsonUpdate = function(jsonString) {
             removeCard()
             break;
         case updateTypes.UPDATE_COMPLETED:
-            // TODO
+            setCardCompleted(jsonUpdate.update.index, jsonUpdate.update.completed)
             break;
     }
 

@@ -38,9 +38,10 @@ class MainActivity : AppCompatActivity() {
     private val activityReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val updateJson = intent.getStringExtra(Utils.JSON_UPDATE)
-            Log.i(TAG, "Bundle: $updateJson")
-            automerge?.applyJsonUpdate(updateJson)
-            appendJsonToLocalHistory(updateJson)
+            updateJson?.let {
+                automerge?.applyJsonUpdate(it)
+                appendJsonToLocalHistory(it)
+            }
         }
     }
 
@@ -108,7 +109,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun registerBroadcastReceiver() {
-        activityReceiver?.let {
+        activityReceiver.let {
             val intentFilter = IntentFilter("ACTION_ACTIVITY")
             registerReceiver(activityReceiver, intentFilter)
         }
@@ -116,7 +117,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun subscribeToFcmTopic(topic: String) {
         FirebaseMessaging.getInstance().subscribeToTopic(topic)
-            .addOnCompleteListener { task ->
+            .addOnCompleteListener {
                 var msg = "You have subscribed to $topic!"
                 Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
             }
