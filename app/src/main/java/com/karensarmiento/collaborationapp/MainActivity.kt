@@ -9,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
-import com.karensarmiento.collaborationapp.messaging.Utils
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import android.content.Intent
@@ -82,13 +81,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_recover_state.setOnClickListener {
-            val updates = localHistory?.readLines()
-            updates?.let {
-                for (jsonUpdate in it) {
-                    automerge?.applyJsonUpdate(jsonUpdate)
-                    Log.i(TAG, "Updated state with: $jsonUpdate")
-                }
-            }
+            recoverLocalStateFromFile()
         }
     }
 
@@ -121,6 +114,16 @@ class MainActivity : AppCompatActivity() {
                 var msg = "You have subscribed to $topic!"
                 Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun recoverLocalStateFromFile() {
+        val updates = localHistory?.readLines()
+        updates?.let {
+            for (jsonUpdate in it) {
+                automerge?.applyJsonUpdate(jsonUpdate)
+                Log.i(TAG, "Updated state with: $jsonUpdate")
+            }
+        }
     }
 
     // TODO: Recreating cards is inefficient. Use RecyclerView with a proper adapter instead.

@@ -1,8 +1,7 @@
-package com.karensarmiento.collaborationapp.messaging
+package com.karensarmiento.collaborationapp
 
 
 import android.util.Log
-import com.karensarmiento.collaborationapp.MainActivity
 import java.io.File
 import java.util.*
 
