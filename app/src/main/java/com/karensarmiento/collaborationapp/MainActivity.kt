@@ -17,6 +17,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.RemoteMessage
 
 class MainActivity : AppCompatActivity() {
 
@@ -83,6 +84,29 @@ class MainActivity : AppCompatActivity() {
         button_recover_state.setOnClickListener {
             recoverLocalStateFromFile()
         }
+
+        button_send_message_server.setOnClickListener {
+            sendSampleUpstreamMessage()
+        }
+    }
+
+    private fun sendSampleUpstreamMessage() {
+//        val message = "THIS IS A SAMPLE MESSAGE :)"
+//        FirebaseMessaging.getInstance().send(
+//            RemoteMessage.Builder("${Utils.SENDER_ID}@${Utils.FCM_SERVER_AUTH_CONNECTION}")
+//                .setMessageId(Utils.getUniqueId())
+//                .addData("message", message)
+//                .build()
+//        )
+        Log.d(TAG, "Sending message to server using RemoteMessage!")
+        val to = "\\topics\\$topic" // the notification key
+        FirebaseMessaging.getInstance().send(
+            RemoteMessage.Builder(to)
+                .setMessageId(Utils.getUniqueId())
+                .addData("hello", "world")
+                .build()
+        )
+        Log.d(TAG, "Done sending message to server using RemoteMessage!")
     }
 
     fun onCheckboxClicked(view: View) {

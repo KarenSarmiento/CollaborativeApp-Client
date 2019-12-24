@@ -36,9 +36,12 @@ let addCard = function (title, completed) {
     eventName = "automerge_addCard"
     ktchannel.startEvent(eventName)
 
-    doc = Automerge.change(doc, 'Add card', it => {
+    newDoc = Automerge.change(doc, 'Add card', it => {
         it.cards.push({ title: title, completed:completed })
     })
+    log(">******* " + JSON.stringify(Automerge.getChanges(doc, newDoc)))
+    log(">* " + JSON.stringify(Automerge.diff(doc, newDoc)))
+    doc = newDoc
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
@@ -57,9 +60,12 @@ let removeCard = function () {
     eventName = "automerge_removeCard"
     ktchannel.startEvent(eventName)
 
-    doc = Automerge.change(doc, 'Delete card', it => {
+    newDoc = Automerge.change(doc, 'Delete card', it => {
       delete it.cards[0]
     })
+    log("> " + JSON.stringify(Automerge.getChanges(doc, newDoc)))
+    log(">* " + JSON.stringify(Automerge.diff(doc, newDoc)))
+    doc = newDoc
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
@@ -76,9 +82,12 @@ let setCardCompleted = function (index, completed) {
     eventName = "automerge_setCardCompleted"
     ktchannel.startEvent(eventName)
 
-    doc = Automerge.change(doc, 'Set Completed', it => {
+    newDoc = Automerge.change(doc, 'Set Completed', it => {
       it.cards[index].completed = completed
     })
+    log("> " + JSON.stringify(Automerge.getChanges(doc, newDoc)))
+    log(">* " + JSON.stringify(Automerge.diff(doc, newDoc)))
+    doc = newDoc
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 
