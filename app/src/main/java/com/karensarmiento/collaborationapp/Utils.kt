@@ -14,7 +14,7 @@ object Utils {
     const val FCM_SERVER = "fcm-xmpp.googleapis.com"
     const val FCM_PROD_PORT = 5235
     const val FCM_TEST_PORT = 5236
-    const val FCM_SERVER_AUTH_CONNECTION = "gcm.googleapis.com"
+    const val FCM_SERVER_AUTH_CONNECTION = "fcm.googleapis.com"
 
     const val FCM_ELEMENT_NAME = "gcm"
     const val FCM_NAMESPACE = "google:mobile:data"
@@ -23,6 +23,10 @@ object Utils {
 
     const val JSON_UPDATE = "JSON_UPDATE"
 
+    // TODO: This is currently a way for the user to remember a user id which is used
+    // in order to identify where messages are sent from. We can remove this once we have
+    // the server in place which ensure that you do not receive your own messages.
+    // We can also make use of registration ids instead of this id?
     private fun setAppUserId(): String {
         val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id")
         if(userIdFile.exists()) {
