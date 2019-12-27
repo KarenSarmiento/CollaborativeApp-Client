@@ -20,13 +20,18 @@ import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : AppCompatActivity() {
 
+    private var localHistory: File? = null
+    private var automerge: Automerge? = null
+
     companion object {
         private const val TAG = "MainActivity"
         internal var appContext: Context?  = null
-        private var automerge: Automerge? = null
         private const val localHistoryFileName = "automerge-state.txt"
-        private var localHistory: File? = null
         private const val topic = "myTestTopic"
+
+        fun getLaunchIntent(from: Context) = Intent(from, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
     }
 
     /**
