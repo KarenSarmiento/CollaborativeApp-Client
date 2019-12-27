@@ -121,6 +121,7 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    // TODO: Fix me. I do not always work.
     private fun recoverLocalStateFromFile() {
         val updates = localHistory?.readLines()
         updates?.let {
