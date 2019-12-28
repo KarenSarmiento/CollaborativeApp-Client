@@ -1,5 +1,7 @@
 package com.karensarmiento.collaborationapp
 
+import android.accounts.Account
+import android.accounts.AccountManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -17,11 +19,13 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
+import com.karensarmiento.collaborationapp.collaboration.GroupManager
 
 class MainActivity : AppCompatActivity() {
 
     private var localHistory: File? = null
     private var automerge: Automerge? = null
+    private var googleAccount: Account? = null
 
     companion object {
         private const val TAG = "MainActivity"
@@ -54,11 +58,19 @@ class MainActivity : AppCompatActivity() {
         appContext = applicationContext
 
         setContentView(R.layout.activity_main)
+        setAccount()
         setUpAutomerge()
         setUpButtonListeners()
         setUpLocalFileState()
         registerBroadcastReceiver()
         subscribeToFcmTopic(topic)
+    }
+
+    private fun setAccount() {
+        // Assume that there is only one account obtained from the sign in activity.
+        val accounts = AccountManager.get(this).getAccountsByType("com.google")
+        if (!accounts.isEmpty())
+            googleAccount = accounts[0]
     }
 
     private fun setUpAutomerge(){
@@ -87,6 +99,13 @@ class MainActivity : AppCompatActivity() {
 
         button_recover_state.setOnClickListener {
             recoverLocalStateFromFile()
+        }
+
+        button_create_group.setOnClickListener {
+            googleAccount?.let {
+                GroupManager.createGroup(this, it)
+            }
+            // TODO: Report if this does not work.
         }
     }
 

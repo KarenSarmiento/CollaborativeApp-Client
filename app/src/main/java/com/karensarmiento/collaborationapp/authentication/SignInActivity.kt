@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.authentication
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -18,8 +19,10 @@ import kotlinx.android.synthetic.main.sign_in_activity.*
 class SignInActivity : AppCompatActivity() {
 
     companion object {
+        private const val TAG = "SignInActivity"
         private const val RC_SIGN_IN: Int = 1
     }
+
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var firebaseAuth: FirebaseAuth
 
@@ -71,8 +74,8 @@ class SignInActivity : AppCompatActivity() {
         }
     }
 
-    private fun firebaseAuthWithGoogle(acct: GoogleSignInAccount) {
-        val credential = GoogleAuthProvider.getCredential(acct.idToken, null)
+    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
+        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         firebaseAuth.signInWithCredential(credential).addOnCompleteListener {
             if (it.isSuccessful)
                 startActivity(MainActivity.getLaunchIntent(this))

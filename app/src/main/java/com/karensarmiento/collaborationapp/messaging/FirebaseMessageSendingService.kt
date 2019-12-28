@@ -21,7 +21,7 @@ import javax.net.ssl.SSLContext
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
     private var xmppConn: XMPPTCPConnection? = null
-    private val buffer = ArrayList<String>()
+//    private val buffer = ArrayList<String>()
 
     init {
         FirebaseConnectionInitialiser().execute()
@@ -107,7 +107,6 @@ object FirebaseMessageSendingService {
 
             val jsonRequest = JSONObject(message).toString()
             return FcmMessageExtension(jsonRequest).toPacket()
-
         }
     }
 }

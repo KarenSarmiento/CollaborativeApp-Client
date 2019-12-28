@@ -19,7 +19,9 @@ object Utils {
     const val FCM_ELEMENT_NAME = "gcm"
     const val FCM_NAMESPACE = "google:mobile:data"
     const val SENDER_ID = "849641919488"
-    const val SERVER_KEY = "AAAAxdKa1AA:APA91bEPghKBhTv8xaQnzP6NFaLiuUJmg4sbI92__5CkoIe8kBAFXYDGH72RX_LKcQ3TixxkHuVELDSHCQt9SWW_wyJVEVmYULaLI6b9nim7CSJkIJKSoKJos4KPmk019jP-GxKY4d_C"
+    const val CLIENT_ID = "849641919488-n1r2bp1114666f92lnh4jo85s68ntu3h.apps.googleusercontent.com"
+    const val SERVER_KEY = "AAAAxdKa1AA:APA91bEPghKBhTv8xaQnzP6NFaLiuUJmg4sbI92__5CkoIe8kBAFXYD" +
+            "GH72RX_LKcQ3TixxkHuVELDSHCQt9SWW_wyJVEVmYULaLI6b9nim7CSJkIJKSoKJos4KPmk019jP-GxKY4d_C"
 
     const val JSON_UPDATE = "JSON_UPDATE"
 
