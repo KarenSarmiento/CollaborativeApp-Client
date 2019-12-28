@@ -6,4 +6,6 @@
     <string name="button_store_state">Store State</string>
     <string name="button_recover_state">Restore Last Stored State</string>
     <string name="button_create_group">Create New Group</string>
+    <string name="group_id_hint">Group id</string>
+    <string name="button_join_group">Join Existing Group</string>
 </resources>

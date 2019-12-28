@@ -1,6 +1,9 @@
 package com.karensarmiento.collaborationapp
 
 
+import android.accounts.Account
+import android.accounts.AccountManager
+import android.app.Activity
 import android.util.Log
 import java.io.File
 import java.util.*
@@ -9,7 +12,7 @@ import java.util.*
 object Utils {
 
     private const val TAG = "Utils"
-    val APP_USER_ID: String = setAppUserId()
+    val APP_USER_ID: String = getUniqueId() //setAppUserId()
 
     const val FCM_SERVER = "fcm-xmpp.googleapis.com"
     const val FCM_PROD_PORT = 5235
@@ -30,7 +33,7 @@ object Utils {
     // the server in place which ensure that you do not receive your own messages.
     // We can also make use of registration ids instead of this id?
     private fun setAppUserId(): String {
-        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id")
+        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id.txt")
         if(userIdFile.exists()) {
             Log.i(TAG, "File")
             return userIdFile.readText()
@@ -44,5 +47,10 @@ object Utils {
 
     fun getUniqueId(): String {
         return UUID.randomUUID().toString()
+    }
+
+    fun getGoogleAccount(activity: Activity): Account {
+        // Assume that only one account is logged in.
+        return AccountManager.get(activity).getAccountsByType("com.google")[0]
     }
 }

@@ -3,7 +3,6 @@ package com.karensarmiento.collaborationapp.authentication
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -12,8 +11,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
+import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
 import kotlinx.android.synthetic.main.sign_in_activity.*
 
 class SignInActivity : AppCompatActivity() {
@@ -40,7 +39,7 @@ class SignInActivity : AppCompatActivity() {
         // Automatic Sign in
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
-            startActivity(MainActivity.getLaunchIntent(this))
+            startActivity(DeviceGroupActivity.getLaunchIntent(this))
         }
     }
 
@@ -78,7 +77,7 @@ class SignInActivity : AppCompatActivity() {
         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         firebaseAuth.signInWithCredential(credential).addOnCompleteListener {
             if (it.isSuccessful)
-                startActivity(MainActivity.getLaunchIntent(this))
+                startActivity(DeviceGroupActivity.getLaunchIntent(this))
             else
                 Toast.makeText(this, "Firebase sign in failed.", Toast.LENGTH_LONG)
                     .show()

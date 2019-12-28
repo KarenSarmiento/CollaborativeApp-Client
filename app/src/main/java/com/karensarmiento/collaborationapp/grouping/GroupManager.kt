@@ -1,6 +1,5 @@
-package com.karensarmiento.collaborationapp.collaboration
+package com.karensarmiento.collaborationapp.grouping
 
-import android.accounts.Account
 import android.app.Activity
 import android.os.AsyncTask
 import android.util.Log
@@ -13,14 +12,18 @@ object GroupManager {
     // TODO: Persist group tokens to memory.
     private val ownedGroups: MutableSet<String> = mutableSetOf()
 
-    fun createGroup(activity: Activity, account: Account) {
-        FirebaseGroupCreator().execute(activity, account)
+    fun createGroup(activity: Activity, callback: ((Unit) -> Unit)? = null) {
+        FirebaseGroupCreator(callback).execute(activity)
     }
 
-    private class FirebaseGroupCreator : AsyncTask<Any, Void, Void>() {
+    fun joinGroup(activity: Activity, callback: ((Unit) -> Unit)? = null) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    private class FirebaseGroupCreator(val callback: ((Unit) -> Unit)? = null) : AsyncTask<Any, Void, Void>() {
         override fun doInBackground(vararg params: Any?): Void? {
             val activity = params[0] as Activity
-            val account = params[1] as Account
+            val account = Utils.getGoogleAccount(activity)
             val scope = "audience:server:client_id:${Utils.CLIENT_ID}"
             var idToken: String? = null
             try {
@@ -32,7 +35,11 @@ object GroupManager {
             ownedGroups.add(idToken!!)
             Log.i(TAG, "Created group with token $idToken")
             return null
+        }
 
+        override fun onPostExecute(result: Void?) {
+            super.onPostExecute(result)
+            callback?.invoke(Unit)
         }
     }
 }
