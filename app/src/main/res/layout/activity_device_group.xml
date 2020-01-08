@@ -11,7 +11,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create a new collaboration group here:" />
+            android:text="@string/create_group_instruction" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
@@ -32,9 +32,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Or join an existing group here:" />
+            android:text="@string/join_group_instruction" />
 
-        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+        <RadioGroup
             android:id="@+id/radio_group_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
