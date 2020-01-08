@@ -88,6 +88,11 @@ class MainActivity : AppCompatActivity() {
         button_recover_state.setOnClickListener {
             recoverLocalStateFromFile()
         }
+
+        button_send_self_message.setOnClickListener {
+            FirebaseMessageSendingService.sendMessageToDeviceGroup(
+                "hello", "testMessage!!!!")
+        }
     }
 
     fun onCheckboxClicked(view: View) {

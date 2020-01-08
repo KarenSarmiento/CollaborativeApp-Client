@@ -8,4 +8,7 @@
     <string name="button_create_group">Create New Group</string>
     <string name="group_id_hint">Group id</string>
     <string name="button_join_group">Join Existing Group</string>
+    <string name="group_name_hint">Group name</string>
+    <string name="button_send_self_message">Send Test Message to Group "hello"</string>
+    <string name="join_group_with_none_selected">Please select or create a group to join</string>
 </resources>

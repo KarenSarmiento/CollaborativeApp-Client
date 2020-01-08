@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.messaging
 import android.os.AsyncTask
 import android.util.Log
 import com.karensarmiento.collaborationapp.Utils
+import com.karensarmiento.collaborationapp.grouping.GroupManager
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
@@ -31,6 +32,12 @@ object FirebaseMessageSendingService {
         // TODO: Use messageIds to ensure messages are sent when implementing buffering.
         val messageId = Utils.getUniqueId()
         FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
+    }
+
+    fun sendMessageToDeviceGroup(groupName: String, payload: String) {
+        val messageId = Utils.getUniqueId()
+        val groupToken = GroupManager.groupToken(groupName)
+        FirebaseMessageSender().execute(groupToken, messageId, payload)
     }
 
     private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {

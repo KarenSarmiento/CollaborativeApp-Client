@@ -5,6 +5,10 @@ import android.accounts.Account
 import android.accounts.AccountManager
 import android.app.Activity
 import android.util.Log
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.iid.FirebaseInstanceId
 import java.io.File
 import java.util.*
 
@@ -52,5 +56,30 @@ object Utils {
     fun getGoogleAccount(activity: Activity): Account {
         // Assume that only one account is logged in.
         return AccountManager.get(activity).getAccountsByType("com.google")[0]
+    }
+
+    fun onCurrentFirebaseToken(callback: ((String) -> Unit)) {
+        FirebaseInstanceId.getInstance().instanceId
+            .addOnCompleteListener(OnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w(TAG, "getting Instance ID token failed", task.exception)
+                    return@OnCompleteListener
+                }
+
+                // Get new Instance ID token and apply callback
+                val token = task.result?.token
+                token?.let {
+                    callback(it)
+                }
+            })
+    }
+
+    fun hideKeyboard(activity: Activity) {
+        val imm = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        var view = activity.currentFocus
+        if (view == null) {
+            view = View(activity)
+        }
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 }

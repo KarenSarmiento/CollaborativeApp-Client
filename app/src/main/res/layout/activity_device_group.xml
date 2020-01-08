@@ -13,6 +13,16 @@
             android:layout_height="wrap_content"
             android:text="Create a new collaboration group here:" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/group_name_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/group_name_text_field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
         <Button
             android:id="@+id/button_create_group"
             android:layout_width="match_parent"
@@ -24,17 +34,12 @@
             android:layout_height="wrap_content"
             android:text="Or join an existing group here:" />
 
-        <com.google.android.material.textfield.TextInputLayout
+        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/radio_group_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/group_id_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/group_id_text_field"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-        </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="vertical">
+        </RadioGroup>
 
         <Button
             android:id="@+id/button_join_group"
