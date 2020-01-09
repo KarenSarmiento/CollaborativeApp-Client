@@ -17,6 +17,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.RemoteMessage
 
 class MainActivity : AppCompatActivity() {
 
@@ -92,6 +93,16 @@ class MainActivity : AppCompatActivity() {
         button_send_self_message.setOnClickListener {
             FirebaseMessageSendingService.sendMessageToDeviceGroup(
                 "hello", "testMessage!!!!")
+        }
+
+        button_send_server_message.setOnClickListener {
+            val fm = FirebaseMessaging.getInstance()
+            fm.send(
+                RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                .setMessageId((Utils.getUniqueId()))
+                .addData("my_message", "Hello World")
+                .addData("my_action", "SAY_HELLO")
+                .build())
         }
     }
 
