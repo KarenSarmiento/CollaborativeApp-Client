@@ -99,10 +99,12 @@ class MainActivity : AppCompatActivity() {
             val fm = FirebaseMessaging.getInstance()
             fm.send(
                 RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
-                .setMessageId((Utils.getUniqueId()))
-                .addData("my_message", "Hello World")
-                .addData("my_action", "SAY_HELLO")
-                .build())
+                    .setMessageType("test")
+                    .setMessageId((Utils.getUniqueId()))
+                    .addData("my_message", "Hello World")
+                    .addData("my_action", "SAY_HELLO")
+                    .build())
+            Log.i(TAG, "Sent test message to server!")
         }
     }
 
