@@ -24,6 +24,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Log.i(TAG, "Received message!! ${remoteMessage.data}")
         // Ignore messages sent from self.
         if (remoteMessage.data["fromUserId"] == Utils.APP_USER_ID)
             return

@@ -17,16 +17,22 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.RemoteMessage
 
 class MainActivity : AppCompatActivity() {
+
+    private var localHistory: File? = null
+    private var automerge: Automerge? = null
 
     companion object {
         private const val TAG = "MainActivity"
         internal var appContext: Context?  = null
-        private var automerge: Automerge? = null
         private const val localHistoryFileName = "automerge-state.txt"
-        private var localHistory: File? = null
         private const val topic = "myTestTopic"
+
+        fun getLaunchIntent(from: Context) = Intent(from, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
     }
 
     /**
@@ -83,6 +89,23 @@ class MainActivity : AppCompatActivity() {
         button_recover_state.setOnClickListener {
             recoverLocalStateFromFile()
         }
+
+        button_send_self_message.setOnClickListener {
+            FirebaseMessageSendingService.sendMessageToDeviceGroup(
+                "hello", "testMessage!!!!")
+        }
+
+        button_send_server_message.setOnClickListener {
+            val fm = FirebaseMessaging.getInstance()
+            fm.send(
+                RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                    .setMessageType("test")
+                    .setMessageId((Utils.getUniqueId()))
+                    .addData("my_message", "Hello World")
+                    .addData("my_action", "SAY_HELLO")
+                    .build())
+            Log.i(TAG, "Sent test message to server!")
+        }
     }
 
     fun onCheckboxClicked(view: View) {
@@ -116,6 +139,7 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    // TODO: Fix me. I do not always work.
     private fun recoverLocalStateFromFile() {
         val updates = localHistory?.readLines()
         updates?.let {
