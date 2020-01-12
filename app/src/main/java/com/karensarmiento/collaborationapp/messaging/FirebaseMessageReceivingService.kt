@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import com.karensarmiento.collaborationapp.utils.Utils
 
 
@@ -35,7 +36,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
             val updateIntent = Intent()
-            updateIntent.putExtra(Utils.JSON_UPDATE, remoteMessage.data["message"])
+            updateIntent.putExtra(Jk.JSON_UPDATE.text, remoteMessage.data[Jk.JSON_UPDATE.text])
             updateIntent.action = "ACTION_ACTIVITY"
             sendBroadcast(updateIntent)
         }

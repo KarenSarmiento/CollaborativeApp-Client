@@ -17,9 +17,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.RemoteMessage
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
-import com.karensarmiento.collaborationapp.utils.Utils
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,7 +42,9 @@ class MainActivity : AppCompatActivity() {
      */
     private val activityReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val updateJson = intent.getStringExtra(Utils.JSON_UPDATE)
+            // TODO: When switch to device group, change this to:
+//            val updateJson = intent.extras?.getString(Jk.JSON_UPDATE.text)
+            val updateJson = intent.getStringExtra(Jk.JSON_UPDATE.text)
             updateJson?.let {
                 automerge?.applyJsonUpdate(it)
                 appendJsonToLocalHistory(it)
@@ -94,18 +94,11 @@ class MainActivity : AppCompatActivity() {
 
         button_send_self_message.setOnClickListener {
             FirebaseMessageSendingService.sendMessageToDeviceGroup(
-                "hello", "testMessage!!!!")
+                "hello", "{}")
         }
 
         button_send_server_message.setOnClickListener {
-            val fm = FirebaseMessaging.getInstance()
-            fm.send(
-                RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
-                    .setMessageId((Utils.getUniqueId()))
-                    .addData(Jk.UPSTREAM_TYPE.text, Jk.NEW_PUBLIC_KEY.text)
-                    .addData(Jk.PUBLIC_KEY.text, "public-key")
-                    .build())
-            Log.i(TAG, "Sent test message to server!")
+            FirebaseMessageSendingService.sendUpstreamNewPublicKeyRequest()
         }
     }
 
@@ -171,5 +164,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendJsonUpdateToTopic(jsonUpdate: String) {
         FirebaseMessageSendingService.sendMessageToTopic(topic, jsonUpdate)
+        // TODO: When device groups work properly, replace the above with:
+        // FirebaseMessageSendingService.sendMessageToDeviceGroup(currentDeviceGroup, jsonUpdate)
     }
 }

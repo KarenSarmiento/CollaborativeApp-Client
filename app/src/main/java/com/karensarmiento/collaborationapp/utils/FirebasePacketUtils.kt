@@ -1,9 +1,14 @@
 package com.karensarmiento.collaborationapp.utils
 
 enum class JsonKeyword(val text: String) {
-    // Upstream Packets
+    // General fields.
     UPSTREAM_TYPE("upstream_type"),
-    NEW_PUBLIC_KEY("new_public_key"),
-    USER_TOKEN("user_token"),
-    PUBLIC_KEY("public_key"),
+
+    // Registering public keys.
+    NEW_PUBLIC_KEY("new_public_key"), PUBLIC_KEY("public_key"), EMAIL("email"),
+
+    // Sending messages to device groups.
+    FORWARD_MESSAGE("forward_message"),
+    FORWARD_TOKEN_ID("forward_token_id"),
+    JSON_UPDATE("json_update")
 }

@@ -2,8 +2,11 @@ package com.karensarmiento.collaborationapp.messaging
 
 import android.os.AsyncTask
 import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.RemoteMessage
 import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
@@ -22,22 +25,39 @@ import javax.net.ssl.SSLContext
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
     private var xmppConn: XMPPTCPConnection? = null
-//    private val buffer = ArrayList<String>()
 
     init {
         FirebaseConnectionInitialiser().execute()
     }
 
+    fun sendUpstreamNewPublicKeyRequest() {
+        FirebaseMessaging.getInstance().send(
+            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                .setMessageId((Utils.getUniqueId()))
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.NEW_PUBLIC_KEY.text)
+                .addData(Jk.EMAIL.text, Utils.getGoogleEmail())
+                .addData(Jk.PUBLIC_KEY.text, "public-key")
+                .build())
+        Log.i(TAG, "Sent new public key request to server!")
+    }
+
     fun sendMessageToTopic(topic: String, payload: String) {
-        // TODO: Use messageIds to ensure messages are sent when implementing buffering.
         val messageId = Utils.getUniqueId()
         FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
     }
 
-    fun sendMessageToDeviceGroup(groupName: String, payload: String) {
+    fun sendMessageToDeviceGroup(groupName: String, jsonUpdate: String) {
         val messageId = Utils.getUniqueId()
         val groupToken = GroupManager.groupToken(groupName)
-        FirebaseMessageSender().execute(groupToken, messageId, payload)
+
+        FirebaseMessaging.getInstance().send(
+            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                .setMessageId(messageId)
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_MESSAGE.text)
+                .addData(Jk.FORWARD_TOKEN_ID.text, groupToken)
+                .addData(Jk.JSON_UPDATE.text, jsonUpdate)
+                .build())
+        Log.i(TAG, "Sent message to device group!")
     }
 
     private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {
@@ -104,7 +124,7 @@ object FirebaseMessageSendingService {
 
         private fun createXMPPMessage(to: String, messageId: String, payload: String): Stanza {
             val payloadMap = HashMap<String, String>()
-            payloadMap["message"] = payload
+            payloadMap[Jk.JSON_UPDATE.text] = payload
             payloadMap["fromUserId"] = Utils.APP_USER_ID
 
             val message = HashMap<Any?, Any?>()

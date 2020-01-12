@@ -29,8 +29,6 @@ object Utils {
     const val SERVER_KEY = "AAAAxdKa1AA:APA91bEPghKBhTv8xaQnzP6NFaLiuUJmg4sbI92__5CkoIe8kBAFXYD" +
             "GH72RX_LKcQ3TixxkHuVELDSHCQt9SWW_wyJVEVmYULaLI6b9nim7CSJkIJKSoKJos4KPmk019jP-GxKY4d_C"
 
-    const val JSON_UPDATE = "JSON_UPDATE"
-
     private var googleSignInAccount: GoogleSignInAccount? = null
 
     // TODO: This is currently a way for the user to remember a user id which is used
@@ -56,6 +54,10 @@ object Utils {
 
     fun setGoogleSignInAccount(account: GoogleSignInAccount) {
         googleSignInAccount = account
+    }
+
+    fun getGoogleEmail(): String? {
+        return googleSignInAccount?.email
     }
 
     fun getGoogleAccount(): Account? {
