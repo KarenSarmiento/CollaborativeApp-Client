@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import com.karensarmiento.collaborationapp.MainActivity
-import com.karensarmiento.collaborationapp.Utils
+import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_device_group.*
 import android.view.View
 import com.google.android.material.snackbar.Snackbar
