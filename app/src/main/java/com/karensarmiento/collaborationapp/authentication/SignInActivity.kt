@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
+import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_sign_in.*
 
 class SignInActivity : AppCompatActivity() {
@@ -29,18 +30,8 @@ class SignInActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
         firebaseAuth = FirebaseAuth.getInstance()
-
         configureGoogleSignIn()
         setUpButtonListeners()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        // Automatic Sign in
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            startActivity(DeviceGroupActivity.getLaunchIntent(this))
-        }
     }
 
     private fun configureGoogleSignIn() {
@@ -52,35 +43,49 @@ class SignInActivity : AppCompatActivity() {
     }
 
     private fun setUpButtonListeners() {
-        sign_in_google_button.setOnClickListener {
+        button_sign_in_google.setOnClickListener {
             // Prompt user to select Google account and send intent
             val signInIntent: Intent = googleSignInClient.signInIntent
             startActivityForResult(signInIntent, RC_SIGN_IN)
+        }
+
+        button_next_page.setOnClickListener {
+            startActivity(DeviceGroupActivity.getLaunchIntent(this))
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            val account = task.getResult(ApiException::class.java)
-            // Using authenticated Google account, authenticate with Firebase.
-            if (account == null)
-                Toast.makeText(this, "Google sign in failed.", Toast.LENGTH_LONG)
-                    .show()
-            else
-                firebaseAuthWithGoogle(account)
+        // TODO : Check connected to internet
+        when(requestCode) {
+            RC_SIGN_IN -> {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                val account = task.getResult(ApiException::class.java)
+                // Using authenticated Google account, authenticate with Firebase.
+                if (account == null) {
+                    Toast.makeText(this, "Google sign in failed.", Toast.LENGTH_LONG)
+                        .show()
+                }
+                else {
+                    Utils.setGoogleSignInAccount(account)
+                    firebaseAuthWithGoogle(account)
+                }
+            }
         }
     }
 
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         firebaseAuth.signInWithCredential(credential).addOnCompleteListener {
-            if (it.isSuccessful)
-                startActivity(DeviceGroupActivity.getLaunchIntent(this))
-            else
+            if (it.isSuccessful) {
+                Toast.makeText(this, "Firebase sign in successful.", Toast.LENGTH_LONG)
+                    .show()
+                button_next_page.isEnabled = true
+            }
+            else {
                 Toast.makeText(this, "Firebase sign in failed.", Toast.LENGTH_LONG)
                     .show()
+            }
         }
     }
 }

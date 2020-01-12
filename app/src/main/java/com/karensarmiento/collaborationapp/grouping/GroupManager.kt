@@ -43,7 +43,7 @@ object GroupManager {
 
         override fun doInBackground(vararg params: Any?): Void? {
             val activity = params[0] as Activity
-            val account = Utils.getGoogleAccount(activity)
+            val account = Utils.getGoogleAccount()
             val scope = "audience:server:client_id:${Utils.CLIENT_ID}"
             try {
                 val groupToken = GoogleAuthUtil.getToken(activity, account, scope)

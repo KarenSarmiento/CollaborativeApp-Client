@@ -14,4 +14,6 @@
     <string name="join_group_instruction">Or join an existing group here:</string>
     <string name="create_group_instruction">Create a new collaboration group here:</string>
     <string name="button_send_server_message">Send test message to server</string>
+    <string name="button_next_page">Next Page</string>
+    <string name="sign_in_to_account_request">Please sign into your Google Account</string>
 </resources>

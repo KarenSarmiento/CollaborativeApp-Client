@@ -2,15 +2,13 @@ package com.karensarmiento.collaborationapp.utils
 
 
 import android.accounts.Account
-import android.accounts.AccountManager
 import android.app.Activity
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.iid.FirebaseInstanceId
-import com.karensarmiento.collaborationapp.MainActivity
-import java.io.File
 import java.util.*
 
 
@@ -33,6 +31,8 @@ object Utils {
 
     const val JSON_UPDATE = "JSON_UPDATE"
 
+    private var googleSignInAccount: GoogleSignInAccount? = null
+
     // TODO: This is currently a way for the user to remember a user id which is used
     // in order to identify where messages are sent from. We can remove this once we have
     // the server in place which ensure that you do not receive your own messages.
@@ -54,9 +54,12 @@ object Utils {
         return UUID.randomUUID().toString()
     }
 
-    fun getGoogleAccount(activity: Activity): Account {
-        // Assume that only one account is logged in.
-        return AccountManager.get(activity).getAccountsByType("com.google")[0]
+    fun setGoogleSignInAccount(account: GoogleSignInAccount) {
+        googleSignInAccount = account
+    }
+
+    fun getGoogleAccount(): Account? {
+        return googleSignInAccount?.account
     }
 
     fun onCurrentFirebaseToken(callback: ((String) -> Unit)) {

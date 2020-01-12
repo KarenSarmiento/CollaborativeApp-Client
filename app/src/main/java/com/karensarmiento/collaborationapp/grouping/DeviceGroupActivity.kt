@@ -48,15 +48,14 @@ class DeviceGroupActivity : AppCompatActivity() {
         button_join_group.setOnClickListener {
             val groupName = getSelectedRadioButtonText()
             if (groupName == null) {
-                Utils.hideKeyboard(this)
-                Snackbar.make(
-                    findViewById(R.id.radio_group_list),
-                    R.string.join_group_with_none_selected,
-                    Snackbar.LENGTH_SHORT
-                ).show()
+                showSnackBarError(R.string.join_group_with_none_selected)
             } else {
                 Utils.onCurrentFirebaseToken {
-                    GroupManager.addToGroup(Utils.getGoogleAccount(this).name, it, groupName)
+                    val account = Utils.getGoogleAccount()
+                    if (account == null)
+                        showSnackBarError(R.string.sign_in_to_account_request)
+                    else
+                        GroupManager.addToGroup(account.name, it, groupName)
                 }
                 startActivity(MainActivity.getLaunchIntent(this))
             }
@@ -78,5 +77,10 @@ class DeviceGroupActivity : AppCompatActivity() {
                 .text.toString()
         }
         return null
+    }
+
+    private fun showSnackBarError(stringId: Int) {
+        Utils.hideKeyboard(this)
+        Snackbar.make(findViewById(R.id.radio_group_list), stringId, Snackbar.LENGTH_SHORT).show()
     }
 }
