@@ -2,7 +2,7 @@ package com.karensarmiento.collaborationapp.messaging
 
 import android.os.AsyncTask
 import android.util.Log
-import com.karensarmiento.collaborationapp.Utils
+import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager

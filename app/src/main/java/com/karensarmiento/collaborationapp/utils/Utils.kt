@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.utils
 
 
 import android.accounts.Account
@@ -9,6 +9,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.iid.FirebaseInstanceId
+import com.karensarmiento.collaborationapp.MainActivity
 import java.io.File
 import java.util.*
 
@@ -36,18 +37,18 @@ object Utils {
     // in order to identify where messages are sent from. We can remove this once we have
     // the server in place which ensure that you do not receive your own messages.
     // We can also make use of registration ids instead of this id?
-    private fun setAppUserId(): String {
-        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id.txt")
-        if(userIdFile.exists()) {
-            Log.i(TAG, "File")
-            return userIdFile.readText()
-        }
-        Log.i(TAG, "No file")
-        val newId = getUniqueId()
-        userIdFile.writeText(newId)
-
-        return newId
-    }
+//    private fun setAppUserId(): String {
+//        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id.txt")
+//        if(userIdFile.exists()) {
+//            Log.i(TAG, "File")
+//            return userIdFile.readText()
+//        }
+//        Log.i(TAG, "No file")
+//        val newId = getUniqueId()
+//        userIdFile.writeText(newId)
+//
+//        return newId
+//    }
 
     fun getUniqueId(): String {
         return UUID.randomUUID().toString()

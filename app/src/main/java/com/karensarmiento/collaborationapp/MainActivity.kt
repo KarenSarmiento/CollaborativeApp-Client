@@ -18,6 +18,8 @@ import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
+import com.karensarmiento.collaborationapp.utils.Utils
 
 class MainActivity : AppCompatActivity() {
 
@@ -99,10 +101,9 @@ class MainActivity : AppCompatActivity() {
             val fm = FirebaseMessaging.getInstance()
             fm.send(
                 RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
-                    .setMessageType("test")
                     .setMessageId((Utils.getUniqueId()))
-                    .addData("my_message", "Hello World")
-                    .addData("my_action", "SAY_HELLO")
+                    .addData(Jk.UPSTREAM_TYPE.text, Jk.NEW_PUBLIC_KEY.text)
+                    .addData(Jk.PUBLIC_KEY.text, "public-key")
                     .build())
             Log.i(TAG, "Sent test message to server!")
         }

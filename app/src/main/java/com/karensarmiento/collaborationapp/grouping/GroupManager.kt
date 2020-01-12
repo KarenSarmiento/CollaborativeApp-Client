@@ -4,7 +4,7 @@ import android.app.Activity
 import android.os.AsyncTask
 import android.util.Log
 import com.google.android.gms.auth.GoogleAuthUtil
-import com.karensarmiento.collaborationapp.Utils
+import com.karensarmiento.collaborationapp.utils.Utils
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
