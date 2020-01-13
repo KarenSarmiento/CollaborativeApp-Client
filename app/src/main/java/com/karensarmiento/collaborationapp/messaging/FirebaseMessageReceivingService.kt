@@ -27,9 +27,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.i(TAG, "Received message!! ${remoteMessage.data}")
         // Ignore messages sent from self.
-        if (remoteMessage.data["fromUserId"] == Utils.APP_USER_ID)
+        if (remoteMessage.data[Jk.EMAIL.text] == Utils.getGoogleEmail()) {
+            Log.i(TAG, "Ignoring message sent from self.")
             return
-
+        }
 
         // Check to see if has data payload (occurs if app is in foreground or background).
         remoteMessage.data.isNotEmpty().let {

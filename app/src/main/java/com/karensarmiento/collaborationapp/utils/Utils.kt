@@ -15,7 +15,6 @@ import java.util.*
 object Utils {
 
     private const val TAG = "Utils"
-    val APP_USER_ID: String = getUniqueId() //setAppUserId()
 
     const val FCM_SERVER = "fcm-xmpp.googleapis.com"
     const val FCM_PROD_PORT = 5235
@@ -30,23 +29,6 @@ object Utils {
             "GH72RX_LKcQ3TixxkHuVELDSHCQt9SWW_wyJVEVmYULaLI6b9nim7CSJkIJKSoKJos4KPmk019jP-GxKY4d_C"
 
     private var googleSignInAccount: GoogleSignInAccount? = null
-
-    // TODO: This is currently a way for the user to remember a user id which is used
-    // in order to identify where messages are sent from. We can remove this once we have
-    // the server in place which ensure that you do not receive your own messages.
-    // We can also make use of registration ids instead of this id?
-//    private fun setAppUserId(): String {
-//        val userIdFile = File(MainActivity.appContext?.filesDir, "app-user-id.txt")
-//        if(userIdFile.exists()) {
-//            Log.i(TAG, "File")
-//            return userIdFile.readText()
-//        }
-//        Log.i(TAG, "No file")
-//        val newId = getUniqueId()
-//        userIdFile.writeText(newId)
-//
-//        return newId
-//    }
 
     fun getUniqueId(): String {
         return UUID.randomUUID().toString()
