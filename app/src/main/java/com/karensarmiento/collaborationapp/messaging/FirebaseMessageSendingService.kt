@@ -30,16 +30,18 @@ object FirebaseMessageSendingService {
         FirebaseConnectionInitialiser().execute()
     }
 
-    fun sendUpstreamNewPublicKeyRequest() {
+    // TODO: Handle success/failure response.
+    fun sendUpstreamRegisterPublicKeyRequest(publicKey: String) {
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId((Utils.getUniqueId()))
-                .addData(Jk.UPSTREAM_TYPE.text, Jk.NEW_PUBLIC_KEY.text)
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.REGISTER_PUBLIC_KEY.text)
                 .addData(Jk.EMAIL.text, Utils.getGoogleEmail())
-                .addData(Jk.PUBLIC_KEY.text, "public-key")
+                .addData(Jk.PUBLIC_KEY.text, publicKey)
                 .build())
-        Log.i(TAG, "Sent new public key request to server!")
+        Log.i(TAG, "Sent register public key request to server!")
     }
+
 
     fun sendMessageToTopic(topic: String, payload: String) {
         val messageId = Utils.getUniqueId()

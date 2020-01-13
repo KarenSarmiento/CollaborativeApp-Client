@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_sign_in.*
 
@@ -80,7 +81,7 @@ class SignInActivity : AppCompatActivity() {
             if (it.isSuccessful) {
                 Toast.makeText(this, "Firebase sign in successful.", Toast.LENGTH_LONG)
                     .show()
-                button_next_page.isEnabled = true
+                onUserLoggedIn()
             }
             else {
                 Toast.makeText(this, "Firebase sign in failed.", Toast.LENGTH_LONG)
@@ -88,4 +89,12 @@ class SignInActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun onUserLoggedIn() {
+        // TODO: Create public key on installation, and send this over instead.
+        Firebase.sendUpstreamRegisterPublicKeyRequest("test-public-key")
+        button_next_page.isEnabled = true
+    }
+
+
 }

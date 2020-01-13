@@ -5,7 +5,7 @@ enum class JsonKeyword(val text: String) {
     UPSTREAM_TYPE("upstream_type"),
 
     // Registering public keys.
-    NEW_PUBLIC_KEY("new_public_key"), PUBLIC_KEY("public_key"), EMAIL("email"),
+    REGISTER_PUBLIC_KEY("register_public_key"), PUBLIC_KEY("public_key"), EMAIL("email"),
 
     // Sending messages to device groups.
     FORWARD_MESSAGE("forward_message"),

@@ -8,7 +8,6 @@ import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
-import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import android.content.Intent
@@ -17,6 +16,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 
 class MainActivity : AppCompatActivity() {
@@ -93,12 +93,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_send_self_message.setOnClickListener {
-            FirebaseMessageSendingService.sendMessageToDeviceGroup(
-                "hello", "{}")
+            Firebase.sendMessageToDeviceGroup("hello", "{}")
         }
 
         button_send_server_message.setOnClickListener {
-            FirebaseMessageSendingService.sendUpstreamNewPublicKeyRequest()
+            Firebase.sendUpstreamRegisterPublicKeyRequest("test-public-key")
         }
     }
 
@@ -163,7 +162,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendJsonUpdateToTopic(jsonUpdate: String) {
-        FirebaseMessageSendingService.sendMessageToTopic(topic, jsonUpdate)
+        Firebase.sendMessageToTopic(topic, jsonUpdate)
         // TODO: When device groups work properly, replace the above with:
         // FirebaseMessageSendingService.sendMessageToDeviceGroup(currentDeviceGroup, jsonUpdate)
     }
