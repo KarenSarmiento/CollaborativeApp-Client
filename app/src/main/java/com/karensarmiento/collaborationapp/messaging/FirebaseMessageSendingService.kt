@@ -19,8 +19,7 @@ import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
 /**
- * This makes use of Smack in order to open an XMPP connection with the Firebase server and send
- * messages.
+ *  This handles the sending of upstream messages to the app server.
  */
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
@@ -30,8 +29,9 @@ object FirebaseMessageSendingService {
         FirebaseConnectionInitialiser().execute()
     }
 
+    // TODO: Add comments containing JSON example for each of these methods.
     // TODO: Handle success/failure response.
-    fun sendUpstreamRegisterPublicKeyRequest(publicKey: String) {
+    fun sendRegisterPublicKeyRequest(publicKey: String) {
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId((Utils.getUniqueId()))
@@ -42,11 +42,6 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent register public key request to server!")
     }
 
-
-    fun sendMessageToTopic(topic: String, payload: String) {
-        val messageId = Utils.getUniqueId()
-        FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
-    }
 
     fun sendMessageToDeviceGroup(groupName: String, jsonUpdate: String) {
         val messageId = Utils.getUniqueId()
@@ -60,6 +55,30 @@ object FirebaseMessageSendingService {
                 .addData(Jk.JSON_UPDATE.text, jsonUpdate)
                 .build())
         Log.i(TAG, "Sent message to device group!")
+    }
+
+    fun sendGetNotificationKeyRequest(peerEmail: String): String {
+        val messageId = Utils.getUniqueId()
+        FirebaseMessaging.getInstance().send(
+            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                .setMessageId(messageId)
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.GET_NOTIFICATION_KEY.text)
+                .addData(Jk.EMAIL.text, peerEmail)
+                .build())
+        Log.i(TAG, "Sent notification key request to server!")
+        return ""
+    }
+
+    /**
+     *  The below makes use of Smack in order to open an XMPP connection with the Firebase server
+     *  and send messages.
+     *
+     *  TODO: Migrate away from this to remote messages.
+     */
+
+    fun sendMessageToTopic(topic: String, payload: String) {
+        val messageId = Utils.getUniqueId()
+        FirebaseMessageSender().execute("/topics/$topic", messageId, payload)
     }
 
     private class FirebaseConnectionInitialiser : AsyncTask<Void, Void, Void>() {

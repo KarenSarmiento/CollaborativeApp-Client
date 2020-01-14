@@ -7,13 +7,12 @@
     <string name="button_recover_state">Restore Last Stored State</string>
     <string name="button_create_group">Create New Group</string>
     <string name="group_id_hint">Group id</string>
-    <string name="button_join_group">Join Existing Group</string>
     <string name="group_name_hint">Group name</string>
     <string name="button_send_self_message">Send Test Message to Group "hello"</string>
-    <string name="join_group_with_none_selected">Please select or create a group to join</string>
-    <string name="join_group_instruction">Or join an existing group here:</string>
     <string name="create_group_instruction">Create a new collaboration group here:</string>
     <string name="button_send_server_message">Send test message to server</string>
     <string name="button_next_page">Next Page</string>
     <string name="sign_in_to_account_request">Please sign into your Google Account</string>
+    <string name="hint_peer_email">friend@google.com</string>
+    <string name="text_peer_email">Enter the email of someone you would like to add to your group:</string>
 </resources>

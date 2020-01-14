@@ -42,9 +42,7 @@ class MainActivity : AppCompatActivity() {
      */
     private val activityReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            // TODO: When switch to device group, change this to:
-//            val updateJson = intent.extras?.getString(Jk.JSON_UPDATE.text)
-            val updateJson = intent.getStringExtra(Jk.JSON_UPDATE.text)
+            val updateJson = intent.getStringExtra(Jk.VALUE.text)
             updateJson?.let {
                 automerge?.applyJsonUpdate(it)
                 appendJsonToLocalHistory(it)
@@ -97,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_send_server_message.setOnClickListener {
-            Firebase.sendUpstreamRegisterPublicKeyRequest("test-public-key")
+            Firebase.sendRegisterPublicKeyRequest("test-public-key")
         }
     }
 
@@ -118,10 +116,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun registerBroadcastReceiver() {
-        activityReceiver.let {
-            val intentFilter = IntentFilter("ACTION_ACTIVITY")
-            registerReceiver(activityReceiver, intentFilter)
-        }
+        val intentFilter = IntentFilter(Jk.JSON_UPDATE.text)
+        registerReceiver(activityReceiver, intentFilter)
     }
 
     private fun subscribeToFcmTopic(topic: String) {

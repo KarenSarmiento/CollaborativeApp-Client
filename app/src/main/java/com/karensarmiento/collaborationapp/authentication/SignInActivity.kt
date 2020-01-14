@@ -92,7 +92,7 @@ class SignInActivity : AppCompatActivity() {
 
     private fun onUserLoggedIn() {
         // TODO: Create public key on installation, and send this over instead.
-        Firebase.sendUpstreamRegisterPublicKeyRequest("test-public-key")
+        Firebase.sendRegisterPublicKeyRequest("test-public-key")
         button_next_page.isEnabled = true
     }
 

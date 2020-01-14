@@ -27,6 +27,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.i(TAG, "Received message!! ${remoteMessage.data}")
         // Ignore messages sent from self.
+        // TODO: Could this be a security threat? You set a message as coming from someone else so
+        // that they don't see certain changes. Maybe only the server should be allowed to do this.
+        // Or maybe you should do this by message id or something.
         if (remoteMessage.data[Jk.EMAIL.text] == Utils.getGoogleEmail()) {
             Log.i(TAG, "Ignoring message sent from self.")
             return
@@ -36,16 +39,31 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
-            val updateIntent = Intent()
-            updateIntent.putExtra(Jk.JSON_UPDATE.text, remoteMessage.data[Jk.JSON_UPDATE.text])
-            updateIntent.action = "ACTION_ACTIVITY"
-            sendBroadcast(updateIntent)
+            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
+                // TODO: Do not accept null here (server should add downstream type.)
+                Jk.JSON_UPDATE.text, null -> handleJsonUpdateMessage(remoteMessage)
+                Jk.GET_NOTIFICATION_KEY.text -> handleNotificationKeyResponse(remoteMessage)
+                else -> Log.i(TAG, "Downstream type $downstreamType is invalid.")
+            }
         }
+    }
 
-        // Check to see if has notification payload (occurs only if app is in background).
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-        }
+    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
+        val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
+
+        val updateIntent = Intent()
+        updateIntent.action = Jk.JSON_UPDATE.text
+        updateIntent.putExtra(Jk.VALUE.text, jsonUpdate)
+        sendBroadcast(updateIntent)
+    }
+
+    private fun handleNotificationKeyResponse(remoteMessage: RemoteMessage) {
+        val notificationKey = remoteMessage.data[Jk.NOTIFICATION_KEY.text]
+
+        val updateIntent = Intent()
+        updateIntent.action = Jk.GET_NOTIFICATION_KEY_RESPONSE.text
+        updateIntent.putExtra(Jk.VALUE.text, notificationKey)
+        sendBroadcast(updateIntent)
     }
 
     /**
