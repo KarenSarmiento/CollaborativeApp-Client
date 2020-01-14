@@ -1,5 +1,8 @@
 package com.karensarmiento.collaborationapp.messaging
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import android.os.AsyncTask
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
@@ -23,11 +26,6 @@ import javax.net.ssl.SSLContext
  */
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
-    private var xmppConn: XMPPTCPConnection? = null
-
-    init {
-        FirebaseConnectionInitialiser().execute()
-    }
 
     // TODO: Add comments containing JSON example for each of these methods.
     // TODO: Handle success/failure response.
@@ -67,6 +65,12 @@ object FirebaseMessageSendingService {
                 .build())
         Log.i(TAG, "Sent notification key request to server!")
         return ""
+    }
+
+    private var xmppConn: XMPPTCPConnection? = null
+
+    init {
+        FirebaseConnectionInitialiser().execute()
     }
 
     /**

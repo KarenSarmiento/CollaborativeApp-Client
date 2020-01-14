@@ -35,21 +35,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * The activityReceiver object receives messages from FirebaseMessagingReceivingService.
-     *
-     * Whenever a message is received, we update the local state.
-     */
-    private val activityReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val updateJson = intent.getStringExtra(Jk.VALUE.text)
-            updateJson?.let {
-                automerge?.applyJsonUpdate(it)
-                appendJsonToLocalHistory(it)
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appContext = applicationContext
@@ -58,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         setUpAutomerge()
         setUpButtonListeners()
         setUpLocalFileState()
-        registerBroadcastReceiver()
+        registerJsonUpdateListener()
         subscribeToFcmTopic(topic)
     }
 
@@ -115,9 +100,19 @@ class MainActivity : AppCompatActivity() {
         localHistory?.writeText("")
     }
 
-    private fun registerBroadcastReceiver() {
+    private fun registerJsonUpdateListener() {
+        val jsonUpdateListener = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val updateJson = intent.getStringExtra(Jk.VALUE.text)
+                Log.i(TAG, "RECEIVED JSON: $updateJson")
+                updateJson?.let {
+                    automerge?.applyJsonUpdate(it)
+                    appendJsonToLocalHistory(it)
+                }
+            }
+        }
         val intentFilter = IntentFilter(Jk.JSON_UPDATE.text)
-        registerReceiver(activityReceiver, intentFilter)
+        registerReceiver(jsonUpdateListener, intentFilter)
     }
 
     private fun subscribeToFcmTopic(topic: String) {
