@@ -38,7 +38,7 @@ class DeviceGroupActivity : AppCompatActivity() {
                 val peerToken = Firebase.sendGetNotificationKeyRequest(peerEmail)
 
                 // if successful then
-                 startActivity(MainActivity.getLaunchIntent(this))
+//                 startActivity(MainActivity.getLaunchIntent(this))
             }
         }
     }

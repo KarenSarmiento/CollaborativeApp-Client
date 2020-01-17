@@ -104,7 +104,6 @@ class MainActivity : AppCompatActivity() {
         val jsonUpdateListener = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val updateJson = intent.getStringExtra(Jk.VALUE.text)
-                Log.i(TAG, "RECEIVED JSON: $updateJson")
                 updateJson?.let {
                     automerge?.applyJsonUpdate(it)
                     appendJsonToLocalHistory(it)

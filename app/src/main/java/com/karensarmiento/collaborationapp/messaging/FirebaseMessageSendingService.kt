@@ -21,11 +21,31 @@ import org.json.JSONObject
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 
+class FirebaseMessageSendingServiceCLASS: BroadcastReceiver() {
+    // TODO: Run on main thread. Consider using goAsync: https://developer.android.com/reference/android/content/BroadcastReceiver.html#goAsync%28%29
+    override fun onReceive(context: Context?, intent: Intent?) {
+        Log.i("BROADCAST RECEIVER", "********** onReceive called!!")
+    }
+}
+
 /**
  *  This handles the sending of upstream messages to the app server.
  */
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
+
+    fun sendGetNotificationKeyRequest(peerEmail: String): String {
+        val messageId = Utils.getUniqueId()
+        FirebaseMessaging.getInstance().send(
+            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+                .setMessageId(messageId)
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.GET_NOTIFICATION_KEY.text)
+                .addData(Jk.EMAIL.text, peerEmail)
+                .build())
+        Log.i(TAG, "Sent notification key request to server!")
+        return ""
+    }
+
 
     // TODO: Add comments containing JSON example for each of these methods.
     // TODO: Handle success/failure response.
@@ -40,7 +60,6 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent register public key request to server!")
     }
 
-
     fun sendMessageToDeviceGroup(groupName: String, jsonUpdate: String) {
         val messageId = Utils.getUniqueId()
         val groupToken = GroupManager.groupToken(groupName)
@@ -53,18 +72,6 @@ object FirebaseMessageSendingService {
                 .addData(Jk.JSON_UPDATE.text, jsonUpdate)
                 .build())
         Log.i(TAG, "Sent message to device group!")
-    }
-
-    fun sendGetNotificationKeyRequest(peerEmail: String): String {
-        val messageId = Utils.getUniqueId()
-        FirebaseMessaging.getInstance().send(
-            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
-                .setMessageId(messageId)
-                .addData(Jk.UPSTREAM_TYPE.text, Jk.GET_NOTIFICATION_KEY.text)
-                .addData(Jk.EMAIL.text, peerEmail)
-                .build())
-        Log.i(TAG, "Sent notification key request to server!")
-        return ""
     }
 
     private var xmppConn: XMPPTCPConnection? = null

@@ -31,6 +31,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver android:name=".messaging.FirebaseMessageSendingServiceCLASS" >
+            <intent-filter>
+                <action android:name="get_notification_key_response"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

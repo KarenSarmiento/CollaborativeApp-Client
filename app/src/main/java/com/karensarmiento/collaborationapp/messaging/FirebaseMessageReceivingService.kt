@@ -10,7 +10,7 @@ import com.karensarmiento.collaborationapp.utils.Utils
 
 /**
  * This makes use of the Google FirebaseMessagingService to:
- * 1) Provide callbacks upon message receipt.
+ * 1) Handle incoming messages
  * 2) Handle client registration tokens.
  */
 class FirebaseMessageReceivingService : FirebaseMessagingService() {
@@ -26,6 +26,21 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.i(TAG, "Received message!! ${remoteMessage.data}")
+
+        // Handle data payload if one exists.
+        remoteMessage.data.isNotEmpty().let {
+            Log.d(TAG, "Message data payload: " + remoteMessage.data)
+
+            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
+                // TODO: Do not accept null here (server should add downstream type.)
+                Jk.JSON_UPDATE.text, null -> handleJsonUpdateMessage(remoteMessage)
+                Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(remoteMessage)
+                else -> Log.i(TAG, "Downstream type $downstreamType is invalid.")
+            }
+        }
+    }
+
+    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
         // Ignore messages sent from self.
         // TODO: Could this be a security threat? You set a message as coming from someone else so
         // that they don't see certain changes. Maybe only the server should be allowed to do this.
@@ -35,20 +50,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             return
         }
 
-        // Check to see if has data payload (occurs if app is in foreground or background).
-        remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: " + remoteMessage.data)
-
-            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
-                // TODO: Do not accept null here (server should add downstream type.)
-                Jk.JSON_UPDATE.text, null -> handleJsonUpdateMessage(remoteMessage)
-                Jk.GET_NOTIFICATION_KEY.text -> handleNotificationKeyResponse(remoteMessage)
-                else -> Log.i(TAG, "Downstream type $downstreamType is invalid.")
-            }
-        }
-    }
-
-    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
         val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
 
         val updateIntent = Intent()
@@ -58,12 +59,13 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     }
 
     private fun handleNotificationKeyResponse(remoteMessage: RemoteMessage) {
-        val notificationKey = remoteMessage.data[Jk.NOTIFICATION_KEY.text]
+        val notificationKey = remoteMessage.data[Jk.NOTIFICATION_KEY.text] ?: "No notification key!"
 
-        val updateIntent = Intent()
+        val updateIntent = Intent(this, FirebaseMessageSendingServiceCLASS::class.java)
         updateIntent.action = Jk.GET_NOTIFICATION_KEY_RESPONSE.text
         updateIntent.putExtra(Jk.VALUE.text, notificationKey)
         sendBroadcast(updateIntent)
+        Log.i(TAG, "Sent notification key: $notificationKey")
     }
 
     /**
