@@ -1,8 +1,5 @@
 package com.karensarmiento.collaborationapp.messaging
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
 import android.os.AsyncTask
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
@@ -55,8 +52,16 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent message to device group!")
     }
 
-    fun sendGetNotificationKeyRequest(peerEmail: String): String {
+    fun maybeAddEmailToGroup(groupName: String, peerEmail: String) {
         val messageId = Utils.getUniqueId()
+        FirebaseMessageReceivingService.applyCallbackOnResponseToRequest(messageId) {notificationId ->
+            Log.i(TAG, "Received get valid get notification key request!")
+            val ownEmail = Utils.getGoogleEmail()
+            if (ownEmail == null)
+                Log.i(TAG, "Cannot add user unless you are logged into google account.")
+            else
+                GroupManager.addToGroup(ownEmail, notificationId as String, groupName)
+        }
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId(messageId)
@@ -64,7 +69,6 @@ object FirebaseMessageSendingService {
                 .addData(Jk.EMAIL.text, peerEmail)
                 .build())
         Log.i(TAG, "Sent notification key request to server!")
-        return ""
     }
 
     private var xmppConn: XMPPTCPConnection? = null

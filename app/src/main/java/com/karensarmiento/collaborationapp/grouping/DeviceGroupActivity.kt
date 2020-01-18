@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_device_group.*
 import com.google.android.material.snackbar.Snackbar
-import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 
@@ -35,17 +35,19 @@ class DeviceGroupActivity : AppCompatActivity() {
             GroupManager.createGroup(this, groupName) {
                 addSelfToGroupOrShowError(groupName)
                 val peerEmail = text_field_peer_email.text.toString()
-                val peerToken = Firebase.sendGetNotificationKeyRequest(peerEmail)
+                Toast.makeText(baseContext, "Creating group not yet supported.", Toast.LENGTH_SHORT).show()
 
+                // TODO: Migrate adding group as server responsibility.
+                Firebase.maybeAddEmailToGroup(groupName, peerEmail)
                 // if successful then
-                 startActivity(MainActivity.getLaunchIntent(this))
+//                 startActivity(MainActivity.getLaunchIntent(this))
             }
         }
     }
 
     private fun addSelfToGroupOrShowError(groupName: String) {
         Utils.onCurrentFirebaseToken {
-            addUserToGroupOrShowError(it, groupName)
+            addUserToGroupOrShowError(groupName, it)
         }
     }
 

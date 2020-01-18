@@ -10,13 +10,22 @@ import com.karensarmiento.collaborationapp.utils.Utils
 
 /**
  * This makes use of the Google FirebaseMessagingService to:
- * 1) Provide callbacks upon message receipt.
+ * 1) Handle incoming messages
  * 2) Handle client registration tokens.
  */
 class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "FirebaseReceiptService"
+        // Maps requestID to a callback to apply on the received response.
+        private val waitingRequests = mutableMapOf<String, (Any?)->Any?>()
+
+        /**
+         *  Registers the requestId as a waiting request. Callback is applied on result if valid.
+         */
+        fun applyCallbackOnResponseToRequest(requestId: String, callback: (Any?)->(Any?)) {
+            waitingRequests[requestId] = callback
+        }
     }
 
     /**
@@ -26,6 +35,26 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.i(TAG, "Received message!! ${remoteMessage.data}")
+
+        // Handle data payload if one exists.
+        remoteMessage.data.isNotEmpty().let {
+            Log.d(TAG, "Message data payload: " + remoteMessage.data)
+
+            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
+                // TODO: Do not accept null here (server should add downstream type.)
+                null -> Log.w(TAG, "No downstream type was specified in received message.")
+                Jk.JSON_UPDATE.text-> handleJsonUpdateMessage(remoteMessage)
+                else -> handleResponseMessage(downstreamType, remoteMessage)
+            }
+        }
+    }
+
+    /**
+     *  Send intent containing Json update to trigger automerge update.
+     *
+     *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
+     */
+    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
         // Ignore messages sent from self.
         // TODO: Could this be a security threat? You set a message as coming from someone else so
         // that they don't see certain changes. Maybe only the server should be allowed to do this.
@@ -35,20 +64,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             return
         }
 
-        // Check to see if has data payload (occurs if app is in foreground or background).
-        remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: " + remoteMessage.data)
-
-            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
-                // TODO: Do not accept null here (server should add downstream type.)
-                Jk.JSON_UPDATE.text, null -> handleJsonUpdateMessage(remoteMessage)
-                Jk.GET_NOTIFICATION_KEY.text -> handleNotificationKeyResponse(remoteMessage)
-                else -> Log.i(TAG, "Downstream type $downstreamType is invalid.")
-            }
-        }
-    }
-
-    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
         val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
 
         val updateIntent = Intent()
@@ -57,13 +72,43 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         sendBroadcast(updateIntent)
     }
 
-    private fun handleNotificationKeyResponse(remoteMessage: RemoteMessage) {
-        val notificationKey = remoteMessage.data[Jk.NOTIFICATION_KEY.text]
+    /**
+     *  Resolve corresponding request ID from waitingRequests maps and handle.
+     *
+     *  @param downstreamType The type of downstream message.
+     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
+     */
+    private fun handleResponseMessage(downstreamType: String, responseMessage: RemoteMessage) {
+        val requestId = responseMessage.data[Jk.REQUEST_ID.text]
+        if (requestId == null) {
+            Log.w(TAG, "No request id was found in the packet. It will be ignored.")
+            return
+        }
+        val callback = waitingRequests[requestId]
+        if (callback == null) {
+            Log.w(TAG, "No request was waiting with id $requestId. Will ignore response")
+            return
+        }
+        waitingRequests.remove(requestId)
 
-        val updateIntent = Intent()
-        updateIntent.action = Jk.GET_NOTIFICATION_KEY_RESPONSE.text
-        updateIntent.putExtra(Jk.VALUE.text, notificationKey)
-        sendBroadcast(updateIntent)
+        when(downstreamType) {
+            Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(responseMessage, callback)
+            else -> Log.w(TAG, "Downstream type $downstreamType not yet supported.")
+        }
+    }
+
+    /**
+     *  Apply the callback to the received notification key or report an error.
+     *
+     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
+     *  @param callback The callback to apply to the received notification key.
+     */
+    private fun handleNotificationKeyResponse(responseMessage: RemoteMessage, callback: (Any?)->(Any?)) {
+        val notificationKey = responseMessage.data[Jk.NOTIFICATION_KEY.text]
+        if (notificationKey == null) {
+            Log.w(TAG, "No notification key was found in a notification key response message.")
+        }
+        callback(notificationKey)
     }
 
     /**
@@ -82,7 +127,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * is initially generated so this is where you would retrieve the token.
      */
     override fun onNewToken(token: String) {
+        // TODO: Notify server of updated registration ID.
         Log.d(TAG, "Refreshed token: $token")
-        // TODO: Notify fellow clients of updated registration ID.
     }
 }
