@@ -155,6 +155,7 @@ object FirebaseMessageSendingService {
 
         private fun createXMPPMessage(to: String, messageId: String, payload: String): Stanza {
             val payloadMap = HashMap<String, String>()
+            payloadMap[Jk.DOWNSTREAM_TYPE.text] = Jk.JSON_UPDATE.text
             payloadMap[Jk.JSON_UPDATE.text] = payload
             payloadMap[Jk.EMAIL.text] = Utils.getGoogleEmail() ?: ""
 

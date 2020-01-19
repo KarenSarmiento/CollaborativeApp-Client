@@ -10,7 +10,6 @@ object MessageBuffer {
     fun registerWaitingRequest(requestId: String) {
         waitingRequests.add(requestId)
         Log.i(TAG, "Registered request as waiting: $requestId.")
-        Log.i(TAG, waitingRequests.toString())
     }
 
     fun tryResolveRequest(requestId: String): Boolean {
