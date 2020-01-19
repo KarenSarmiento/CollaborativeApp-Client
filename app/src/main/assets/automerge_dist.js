@@ -7208,8 +7208,6 @@ module.exports = { Text: Text, getElemId: getElemId, instantiateText: instantiat
       this.ownerID = ownerID;
     }
 
-    // TODO: seems like these methods are very similar
-
     VNode.prototype.removeBefore = function(ownerID, level, index) {
       if (index === level ? 1 << level :  false || this.array.length === 0) {
         return this;
@@ -14721,7 +14719,6 @@ var Connection = function () {
         this.maybeSendChanges(msg.docId);
       } else if (!this._ourClock.has(msg.docId)) {
         // If the remote node has data that we don't, immediately ask for it.
-        // TODO should we sometimes exercise restraint in what we ask for?
         this.sendMsg(msg.docId, Map());
       }
 

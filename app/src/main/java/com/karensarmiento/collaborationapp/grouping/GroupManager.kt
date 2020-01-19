@@ -18,4 +18,8 @@ object GroupManager {
         Log.i(TAG, "Registered $groupName to groupId $groupId.")
         ownedGroups[groupName] = groupId
     }
+
+    fun getAllRegisteredGroups(): MutableSet<String> {
+        return ownedGroups.keys
+    }
 }

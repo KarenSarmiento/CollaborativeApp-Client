@@ -44,4 +44,23 @@
             android:layout_height="wrap_content"
             android:text="@string/button_create_group" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/text_join_existing_group" />
+
+        <RadioGroup
+            android:id="@+id/radio_group_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/button_existing_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:text="@string/button_existing_group" />
+
 </LinearLayout>

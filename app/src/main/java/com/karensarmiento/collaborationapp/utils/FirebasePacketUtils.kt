@@ -23,6 +23,8 @@ enum class JsonKeyword(val text: String) {
     MEMBER_EMAILS("member_emails"),
     CREATE_GROUP_RESPONSE("create_group_response"),
     FAILED_EMAILS("failed_emails"),
+    ADDED_TO_GROUP("added_to_group"),
+    GROUP_NAME("group_name"),
 
     // Sending messages to device groups.
     FORWARD_MESSAGE("forward_message"),

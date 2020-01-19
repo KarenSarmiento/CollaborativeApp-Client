@@ -57,9 +57,7 @@ object FirebaseMessageSendingService {
         val groupId = Utils.getUniqueId()
 
         // Register this request as one that is awaiting a response.
-        FirebaseMessageReceivingService.applyCallbackOnResponseToRequest(messageId) {
-            GroupManager.registerGroup(groupName, groupId)
-        }
+        MessageBuffer.registerWaitingRequest(messageId)
 
         // Send request
         val memberEmails = JSONArray()
@@ -68,6 +66,7 @@ object FirebaseMessageSendingService {
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId(messageId)
                 .addData(Jk.UPSTREAM_TYPE.text, Jk.CREATE_GROUP.text)
+                .addData(Jk.GROUP_NAME.text, groupName)
                 .addData(Jk.GROUP_ID.text, groupId)
                 .addData(Jk.MEMBER_EMAILS.text, memberEmails.toString())
                 .build())

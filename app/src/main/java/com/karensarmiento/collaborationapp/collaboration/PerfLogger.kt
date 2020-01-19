@@ -17,6 +17,5 @@ class PerfLogger(val logEvent: (String, Long) -> Unit) {
             val deltaTimeMs = (System.nanoTime() - startTime) / nsPerMs
             logEvent(name, deltaTimeMs)
         }
-        // TODO: consider removing event from hash table
     }
 }
