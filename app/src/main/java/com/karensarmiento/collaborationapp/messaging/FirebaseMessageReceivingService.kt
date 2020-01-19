@@ -6,6 +6,7 @@ import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import com.karensarmiento.collaborationapp.utils.Utils
+import org.json.JSONArray
 
 
 /**
@@ -93,6 +94,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
         when(downstreamType) {
             Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(responseMessage, callback)
+            Jk.CREATE_GROUP_RESPONSE.text -> handleCreateGroupResponse(responseMessage, callback)
             else -> Log.w(TAG, "Downstream type $downstreamType not yet supported.")
         }
     }
@@ -109,6 +111,27 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             Log.w(TAG, "No notification key was found in a notification key response message.")
         }
         callback(notificationKey)
+    }
+
+    /**
+     *  Apply the callback to the received notification key or report an error.
+     *
+     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
+     *  @param callback The callback to apply to the received notification key.
+     */
+    private fun handleCreateGroupResponse(responseMessage: RemoteMessage, callback: (Any?)->(Any?)) {
+        val success = responseMessage.data[Jk.SUCCESS.text]
+        Log.i(TAG, "Success = $success")
+        if (success != null && success.toBoolean()) {
+            callback(Unit)
+            val failedEmails = JSONArray(responseMessage.data[Jk.FAILED_EMAILS.text])
+            if (failedEmails.length() == 0)
+                Log.i(TAG, "Successfully created group!")
+            else
+                Log.i(TAG, "Successfully created group but failed to add $failedEmails.")
+        } else {
+            Log.i(TAG, "Failed to create new group.")
+        }
     }
 
     /**

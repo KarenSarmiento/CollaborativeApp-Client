@@ -4,10 +4,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Toast
-import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_device_group.*
-import com.google.android.material.snackbar.Snackbar
+import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 
@@ -32,36 +30,10 @@ class DeviceGroupActivity : AppCompatActivity() {
         button_create_group.setOnClickListener {
             // TODO: Validate that the group name is unique.
             val groupName = group_name_text_field.text.toString()
-            GroupManager.createGroup(this, groupName) {
-                addSelfToGroupOrShowError(groupName)
-                val peerEmail = text_field_peer_email.text.toString()
-                Toast.makeText(baseContext, "Creating group not yet supported.", Toast.LENGTH_SHORT).show()
-
-                // TODO: Migrate adding group as server responsibility.
-                Firebase.maybeAddEmailToGroup(groupName, peerEmail)
-                // if successful then
-//                 startActivity(MainActivity.getLaunchIntent(this))
-            }
+            val peerEmail = text_field_peer_email.text.toString()
+            Firebase.sendCreateGroupRequest(groupName, peerEmail)
+            // TODO: Buffer all group packets until we have received a successful group creation response.
+            startActivity(MainActivity.getLaunchIntent(this))
         }
-    }
-
-    private fun addSelfToGroupOrShowError(groupName: String) {
-        Utils.onCurrentFirebaseToken {
-            addUserToGroupOrShowError(groupName, it)
-        }
-    }
-
-    private fun addUserToGroupOrShowError(groupName: String, userToken: String) {
-        val account = Utils.getGoogleAccount()
-        if (account == null)
-            showSnackBarError(R.string.sign_in_to_account_request)
-        else
-            GroupManager.addToGroup(account.name, userToken, groupName)
-    }
-
-
-    private fun showSnackBarError(stringId: Int) {
-        Utils.hideKeyboard(this)
-        Snackbar.make(findViewById(R.id.button_create_group), stringId, Snackbar.LENGTH_SHORT).show()
     }
 }
