@@ -1,8 +1,5 @@
 package com.karensarmiento.collaborationapp.messaging
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
 import android.os.AsyncTask
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
@@ -17,6 +14,7 @@ import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.roster.Roster
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
+import org.json.JSONArray
 import org.json.JSONObject
 import java.security.SecureRandom
 import javax.net.ssl.SSLContext
@@ -28,7 +26,6 @@ object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
 
     // TODO: Add comments containing JSON example for each of these methods.
-    // TODO: Handle success/failure response.
     fun sendRegisterPublicKeyRequest(publicKey: String) {
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
@@ -43,7 +40,7 @@ object FirebaseMessageSendingService {
 
     fun sendMessageToDeviceGroup(groupName: String, jsonUpdate: String) {
         val messageId = Utils.getUniqueId()
-        val groupToken = GroupManager.groupToken(groupName)
+        val groupToken = GroupManager.groupId(groupName)
 
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
@@ -55,16 +52,25 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent message to device group!")
     }
 
-    fun sendGetNotificationKeyRequest(peerEmail: String): String {
+    fun sendCreateGroupRequest(groupName: String, peerEmail: String) {
         val messageId = Utils.getUniqueId()
+        val groupId = Utils.getUniqueId()
+
+        // Register this request as one that is awaiting a response.
+        MessageBuffer.registerWaitingRequest(messageId)
+
+        // Send request
+        val memberEmails = JSONArray()
+        memberEmails.put(peerEmail)
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId(messageId)
-                .addData(Jk.UPSTREAM_TYPE.text, Jk.GET_NOTIFICATION_KEY.text)
-                .addData(Jk.EMAIL.text, peerEmail)
+                .addData(Jk.UPSTREAM_TYPE.text, Jk.CREATE_GROUP.text)
+                .addData(Jk.GROUP_NAME.text, groupName)
+                .addData(Jk.GROUP_ID.text, groupId)
+                .addData(Jk.MEMBER_EMAILS.text, memberEmails.toString())
                 .build())
-        Log.i(TAG, "Sent notification key request to server!")
-        return ""
+        Log.i(TAG, "Sent create group request to server!")
     }
 
     private var xmppConn: XMPPTCPConnection? = null
@@ -149,6 +155,7 @@ object FirebaseMessageSendingService {
 
         private fun createXMPPMessage(to: String, messageId: String, payload: String): Stanza {
             val payloadMap = HashMap<String, String>()
+            payloadMap[Jk.DOWNSTREAM_TYPE.text] = Jk.JSON_UPDATE.text
             payloadMap[Jk.JSON_UPDATE.text] = payload
             payloadMap[Jk.EMAIL.text] = Utils.getGoogleEmail() ?: ""
 

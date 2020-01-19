@@ -12,8 +12,6 @@ import org.jivesoftware.smack.packet.Message
  */
 class FcmMessageExtension(private val json: String) : ExtensionElement {
     override fun toXML(): CharSequence {
-        // TODO: 1. Do we need to escape the JSON? - StringUtils.escapeForXML(json)
-        // 2. How do we use the enclosing namespace?
         return "<$elementName xmlns=\"$namespace\">$json</$elementName>"
     }
 

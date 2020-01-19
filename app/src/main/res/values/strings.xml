@@ -15,4 +15,7 @@
     <string name="sign_in_to_account_request">Please sign into your Google Account</string>
     <string name="hint_peer_email">friend@google.com</string>
     <string name="text_peer_email">Enter the email of someone you would like to add to your group:</string>
+    <string name="text_join_existing_group">Or continue on any existing group shown below:</string>
+    <string name="button_existing_group">Edit on Existing Group</string>
+    <string name="join_group_with_none_selected">Please select an existing group or create a new one.</string>
 </resources>

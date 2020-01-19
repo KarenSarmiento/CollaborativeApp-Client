@@ -1,25 +1,52 @@
 package com.karensarmiento.collaborationapp
 
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.ext.junit.runners.AndroidJUnit4
-
+import android.content.Intent
+import com.google.firebase.messaging.RemoteMessage
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageReceivingService
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.*
+import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.ArgumentMatcher
 
-import org.junit.Assert.*
 
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * Use these tests when writing integration and functional UI tests to automate user interaction,
- * or when your tests have Android dependencies that mock objects cannot satisfy.
- */
-@RunWith(AndroidJUnit4::class)
-class ExampleInstrumentedTest {
+@RunWith(MockitoJUnitRunner::class)
+class UnitTestSample {
+
+    // TODO: Can probably do as normal unit test by mocking intent.
     @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.karensarmiento.collaborationapp", appContext.packageName)
+    fun whenReceiveJsonUpdateThenBroadcastIntent() {
+        // GIVEN
+        val fmrsMock = spy(FirebaseMessageReceivingService::class.java)
+        doNothing().`when`(fmrsMock).sendBroadcast(any())
+
+        val jsonUpdate = "{\"test\":\"json\"}"
+        val email = "test@gmail.com"
+        val messageMock = mock(RemoteMessage::class.java)
+        `when`(messageMock.data).thenReturn(mapOf(
+            Jk.DOWNSTREAM_TYPE.text to Jk.JSON_UPDATE.text,
+            Jk.JSON_UPDATE.text to jsonUpdate,
+            Jk.EMAIL.text to email
+        ))
+
+        // WHEN
+        fmrsMock.onMessageReceived(messageMock)
+
+        // THEN
+        val expectedIntent = Intent()
+        expectedIntent.action = Jk.JSON_UPDATE.text
+        expectedIntent.putExtra(Jk.VALUE.text, jsonUpdate)
+        verify(fmrsMock).sendBroadcast(argThat(IntentMatcher(expectedIntent)))
     }
 }
+
+// TODO: See if can use as anonymous class.
+class IntentMatcher(private val actualIntent: Intent) : ArgumentMatcher<Intent> {
+    override fun matches(mockIntent: Intent): Boolean {
+        return mockIntent.filterEquals(actualIntent)
+    }
+}
+
+// TODO: Create test for other downstream message types that can currently be processed.
