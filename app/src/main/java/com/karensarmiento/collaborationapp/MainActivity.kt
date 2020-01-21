@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
 
     private var localHistory: File? = null
     private var automerge: Automerge? = null
+    private lateinit var jsonUpdateListener: BroadcastReceiver
 
     companion object {
         private const val TAG = "MainActivity"
@@ -99,7 +100,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun registerJsonUpdateListener() {
-        val jsonUpdateListener = object : BroadcastReceiver() {
+        jsonUpdateListener = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val updateJson = intent.getStringExtra(Jk.VALUE.text)
                 Log.i(TAG, "RECEIVED JSON: $updateJson")
@@ -140,5 +141,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun appendJsonToLocalHistory(json : String) {
         localHistory?.appendText("$json\n")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(jsonUpdateListener)
     }
 }

@@ -22,6 +22,8 @@ import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingServi
 
 class DeviceGroupActivity : AppCompatActivity() {
 
+    private lateinit var addedToGroupListener: BroadcastReceiver
+
     companion object {
         private const val TAG = "DeviceGroupActivity"
         fun getLaunchIntent(from: Context) = Intent(from, DeviceGroupActivity::class.java).apply {
@@ -88,7 +90,7 @@ class DeviceGroupActivity : AppCompatActivity() {
     }
 
     private fun registerAddedToGroupListener() {
-        val addedToGroupListener = object : BroadcastReceiver() {
+        addedToGroupListener = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val groupName = intent.getStringExtra(Jk.VALUE.text)
                 groupName?.let {
@@ -118,6 +120,6 @@ class DeviceGroupActivity : AppCompatActivity() {
     }
     override fun onDestroy() {
         super.onDestroy()
-        // TODO: deregister broadcast receiver
+        unregisterReceiver(addedToGroupListener)
     }
 }
