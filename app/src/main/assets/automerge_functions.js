@@ -16,8 +16,7 @@ let log = function (text) { document.getElementById('output').textContent += "> 
 
 let doc = Automerge.from({ cards: [] })
 
-let applyJsonUpdate = function(jsonString) {
-    jsonUpdate = JSON.parse(jsonString)
+let applyJsonUpdate = function(jsonUpdate) {
     switch(jsonUpdate.updateType) {
         case updateTypes.ADD_TODO:
             addCard(jsonUpdate.update.label, false)

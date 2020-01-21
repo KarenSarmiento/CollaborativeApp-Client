@@ -30,6 +30,7 @@ enum class JsonKeyword(val text: String) {
     FORWARD_MESSAGE("forward_message"),
     FORWARD_TOKEN_ID("forward_token_id"),
     JSON_UPDATE("json_update"),
+    ORIGINATOR("originator"),
 
     // Intents
     VALUE("value")

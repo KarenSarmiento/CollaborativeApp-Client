@@ -48,21 +48,22 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
-        // Ignore messages sent from self.
-        // TODO: Could this be a security threat? You set a message as coming from someone else so
-        // that they don't see certain changes. Maybe only the server should be allowed to do this.
-        // Or maybe you should do this by message id or something.
-        if (remoteMessage.data[Jk.EMAIL.text] == Utils.getGoogleEmail()) {
-            Log.i(TAG, "Ignoring message sent from self.")
-            return
+        Utils.onCurrentFirebaseToken { currToken ->
+            var processUpdate = true
+            if (remoteMessage.data[Jk.ORIGINATOR.text] == currToken) {
+                Log.i(TAG, "Ignoring message sent from self.")
+                processUpdate = false
+            }
+            val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
+            if (jsonUpdate == null) {
+                Log.w(TAG, "Received json_update message with no jsonUpdate - will ignore it.")
+                processUpdate = false
+            }
+            if (processUpdate) {
+                // TODO: Store these changes in a file in case the user is offline.
+                broadcastIntent(Jk.JSON_UPDATE.text, jsonUpdate!!)
+            }
         }
-
-        val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
-        if (jsonUpdate == null) {
-            Log.w(TAG, "Received json_update message with no jsonUpdate - will ignore it.")
-            return
-        }
-        broadcastIntent(Jk.JSON_UPDATE.text, jsonUpdate)
     }
 
     /**

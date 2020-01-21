@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private fun setUpButtonListeners() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false)) {
+                // TODO: Update json in onMessageReceive, not here.
                 appendJsonToLocalHistory(it)
                 FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
             }
