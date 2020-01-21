@@ -27,7 +27,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.i(TAG, "Received message!! ${remoteMessage.data}")
+        Log.i(TAG, "Received message!! ${remoteMessage.messageId}")
 
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
@@ -177,5 +177,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         updateIntent.action = action
         updateIntent.putExtra(Jk.VALUE.text, value)
         sendBroadcast(updateIntent)
+    }
+
+    override fun onMessageSent(s: String) {
+        super.onMessageSent(s)
+        Log.i(TAG, "*** Officially sent upstream message: $s")
     }
 }

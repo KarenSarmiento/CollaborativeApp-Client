@@ -50,7 +50,7 @@ let addCard = function (title, completed) {
             "label" : title
         }
     }
-    return JSON.stringify(updateMessage)
+    return updateMessage
 }
 
 let removeCard = function () {
@@ -69,7 +69,7 @@ let removeCard = function () {
         "updateType" : "removeTodo",
         "update" : {}
     }
-    return JSON.stringify(updateMessage)
+    return updateMessage
 }
 
 let setCardCompleted = function (index, completed) {
@@ -91,5 +91,5 @@ let setCardCompleted = function (index, completed) {
             "completed" : completed
         }
     }
-    return JSON.stringify(updateMessage)
+    return updateMessage
 }

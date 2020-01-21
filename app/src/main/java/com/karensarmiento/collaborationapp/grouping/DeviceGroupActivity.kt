@@ -14,6 +14,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_device_group.*
 import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
+import com.karensarmiento.collaborationapp.grouping.GroupManager.maybeSetCurrentGroup
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
@@ -64,13 +65,24 @@ class DeviceGroupActivity : AppCompatActivity() {
                 Utils.hideKeyboard(this)
                 Snackbar.make(
                     findViewById(R.id.radio_group_list),
-                    R.string.join_group_with_none_selected,
+                    R.string.error_join_group_with_none_selected,
                     Snackbar.LENGTH_SHORT
                 ).show()
             } else {
                 // TODO: Load data corresponding with existing group and update ui for messages
                 // related only to this group.
-                startActivity(MainActivity.getLaunchIntent(this))
+                val result = maybeSetCurrentGroup(groupName)
+                if (result) {
+                    GroupManager.currentGroup = groupName
+                    startActivity(MainActivity.getLaunchIntent(this))
+                } else {
+                    Utils.hideKeyboard(this)
+                    Snackbar.make(
+                        findViewById(R.id.radio_group_list),
+                        R.string.error_join_unregistered_group,
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
@@ -103,5 +115,9 @@ class DeviceGroupActivity : AppCompatActivity() {
                 .text.toString()
         }
         return null
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        // TODO: deregister broadcast receiver
     }
 }

@@ -9,6 +9,17 @@ object GroupManager {
     // TODO: Persist group ids to memory.
     // Maps group names to group ids.
     private val ownedGroups: MutableMap<String, String> = mutableMapOf()
+    var currentGroup: String? = null
+        get() = field
+
+    fun maybeSetCurrentGroup(groupName: String): Boolean {
+        if (ownedGroups.containsKey(groupName)) {
+            currentGroup = groupName
+            return true
+        }
+        Log.e(TAG, "Attempted to set current group as an unregistered group.")
+        return false
+    }
 
     fun groupId(groupName: String): String? {
         return ownedGroups[groupName]

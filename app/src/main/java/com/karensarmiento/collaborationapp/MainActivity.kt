@@ -14,10 +14,9 @@ import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
-import android.widget.Toast
-import com.google.firebase.messaging.FirebaseMessaging
-import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,7 +27,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
         internal var appContext: Context?  = null
         private const val localHistoryFileName = "automerge-state.txt"
-        private const val topic = "myTestTopic"
 
         fun getLaunchIntent(from: Context) = Intent(from, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -44,7 +42,6 @@ class MainActivity : AppCompatActivity() {
         setUpButtonListeners()
         setUpLocalFileState()
         registerJsonUpdateListener()
-        subscribeToFcmTopic(topic)
     }
 
     private fun setUpAutomerge(){
@@ -59,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         button_add_card.setOnClickListener {
             automerge?.addCard(Card(text_field.text.toString(), false)) {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToTopic(it)
+                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
             }
             text_field.setText("")
         }
@@ -67,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         button_remove_card.setOnClickListener {
             automerge?.removeCard {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToTopic(it)
+                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
             }
         }
 
@@ -76,11 +73,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         button_send_self_message.setOnClickListener {
-            Firebase.sendMessageToDeviceGroup("hello", "{}")
+            FirebaseSending.sendJsonUpdateToCurrentDeviceGroup("{}")
         }
 
         button_send_server_message.setOnClickListener {
-            Firebase.sendRegisterPublicKeyRequest("test-public-key")
+            FirebaseSending.sendRegisterPublicKeyRequest("test-public-key")
         }
     }
 
@@ -89,7 +86,7 @@ class MainActivity : AppCompatActivity() {
             val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
             automerge?.setCardCompleted(index, view.isChecked) {
                 appendJsonToLocalHistory(it)
-                sendJsonUpdateToTopic(it)
+                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
             }
         }
     }
@@ -113,14 +110,6 @@ class MainActivity : AppCompatActivity() {
         }
         val intentFilter = IntentFilter(Jk.JSON_UPDATE.text)
         registerReceiver(jsonUpdateListener, intentFilter)
-    }
-
-    private fun subscribeToFcmTopic(topic: String) {
-        FirebaseMessaging.getInstance().subscribeToTopic(topic)
-            .addOnCompleteListener {
-                var msg = "You have subscribed to $topic!"
-                Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-            }
     }
 
     // TODO: Fix me. I do not always work.
@@ -150,11 +139,5 @@ class MainActivity : AppCompatActivity() {
 
     private fun appendJsonToLocalHistory(json : String) {
         localHistory?.appendText("$json\n")
-    }
-
-    private fun sendJsonUpdateToTopic(jsonUpdate: String) {
-        Firebase.sendMessageToTopic(topic, jsonUpdate)
-        // TODO: When device groups work properly, replace the above with:
-        // FirebaseMessageSendingService.sendMessageToDeviceGroup(currentDeviceGroup, jsonUpdate)
     }
 }
