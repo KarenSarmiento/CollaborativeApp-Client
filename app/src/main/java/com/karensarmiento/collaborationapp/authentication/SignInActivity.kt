@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
+import com.karensarmiento.collaborationapp.security.KeyManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_sign_in.*
@@ -57,7 +58,7 @@ class SignInActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // TODO : Check connected to internet
+        // TODO : Check connected to internet (this throws error if not connected)
         when(requestCode) {
             RC_SIGN_IN -> {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(data)
@@ -91,8 +92,11 @@ class SignInActivity : AppCompatActivity() {
     }
 
     private fun onUserLoggedIn() {
-        // TODO: Create public key on installation, and send this over instead.
-        Firebase.sendRegisterPublicKeyRequest("test-public-key")
+        // TODO: Check if user is registered with server or not. If not, then gen and send public
+        // key.
+        val publicKey = KeyManager.publicKeyAsString()
+        Firebase.sendRegisterPublicKeyRequest(publicKey)
+
         button_next_page.isEnabled = true
     }
 }
