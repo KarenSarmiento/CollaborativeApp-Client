@@ -95,6 +95,4 @@ class SignInActivity : AppCompatActivity() {
         Firebase.sendRegisterPublicKeyRequest("test-public-key")
         button_next_page.isEnabled = true
     }
-
-
 }
