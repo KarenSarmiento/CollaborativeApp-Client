@@ -94,7 +94,7 @@ class SignInActivity : AppCompatActivity() {
     private fun onUserLoggedIn() {
         // TODO: Check if user is registered with server or not. If not, then gen and send public
         // key.
-        val publicKey = KeyManager.publicKeyAsString()
+        val publicKey = KeyManager.getPublicKeyAsString()
         Firebase.sendRegisterPublicKeyRequest(publicKey)
 
         button_next_page.isEnabled = true

@@ -7,16 +7,27 @@ import java.security.*
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import java.nio.ByteBuffer
 
 
 object KeyManager {
 
     private const val TAG = "KeyManager"
+
+    private const val AES_TRANSFORMATION = "AES/GCM/NoPadding"
+    private const val AES_KEY_SIZE = 256
+    private const val AES_IV_LENGTH = 12
+    private const val AES_AUTH_TAG_LENGTH = 128
+
     private const val RSA_TRANSFORMATION = "RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING"
+    private const val RSA_KEY_SIZE = 2048
     private lateinit var personalKeys: KeyPair
 
     init {
-        val genKeys = generateKeyPair()
+        val genKeys = generateKeyPairRSA()
         if (genKeys == null) {
             Log.e(TAG, "Public and private keys could not be generated and are null.")
         } else {
@@ -24,18 +35,73 @@ object KeyManager {
         }
     }
 
-    fun publicKeyAsString(): String {
-        return Base64.encodeToString(personalKeys.public.encoded, Base64.NO_WRAP)
+    /**
+     *  AES encryption
+     */
+    fun generateKeyAESGCM(): SecretKey {
+        val keyGen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES)
+        keyGen.init(AES_KEY_SIZE)
+        return keyGen.generateKey()
     }
 
-    fun privateKeyAsString(): String {
-        return Base64.encodeToString(personalKeys.private.encoded, Base64.NO_WRAP)
+    fun encryptAESGCM(plaintext: String, key: SecretKey): String {
+        // Create an initialisation vector.
+        val secureRandom = SecureRandom()
+        val iv = ByteArray(AES_IV_LENGTH)
+        secureRandom.nextBytes(iv)
+
+        // Initialise cipher and encrypt.
+        val cipher = Cipher.getInstance(AES_TRANSFORMATION)
+        val paramSpec = GCMParameterSpec(AES_AUTH_TAG_LENGTH, iv) //128 bit auth tag length
+        cipher.init(Cipher.ENCRYPT_MODE, key, paramSpec)
+        val ciphertext = cipher.doFinal(plaintext.toByteArray(charset("UTF-8")))
+
+        // Concatenate initialisation vector with ciphertext.
+        val byteBuffer = ByteBuffer.allocate(iv.size + ciphertext.size)
+        byteBuffer.put(iv)
+        byteBuffer.put(ciphertext)
+        val cipherMessage = byteBuffer.array()
+
+        // Encode to string.
+        return String(Base64.encode(cipherMessage, Base64.DEFAULT))
+    }
+
+    fun decryptAESGCM(ciphertext: String, key: SecretKey): String {
+        // Decode from string.
+        val encryptedBytes = Base64.decode(ciphertext, Base64.DEFAULT)
+
+        // Deconstruct the message.
+        val byteBuffer = ByteBuffer.wrap(encryptedBytes)
+        val iv = ByteArray(AES_IV_LENGTH)
+        byteBuffer.get(iv)
+        val cipherText = ByteArray(byteBuffer.remaining())
+        byteBuffer.get(cipherText)
+
+        // Initialise cipher and decrypt.
+        val cipher = Cipher.getInstance(AES_TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(AES_AUTH_TAG_LENGTH, iv))
+        val plainText = cipher.doFinal(cipherText)
+
+        // Encode to string.
+        return String(plainText)
+    }
+
+    /**
+     *  RSA encryption
+     */
+
+    fun getPublicKeyAsString(): String {
+        return keyAsString(personalKeys.public)
+    }
+
+    fun getPrivateKeyAsString(): String {
+        return keyAsString(personalKeys.private)
     }
 
     fun maybeEncryptRSA(plaintext: String, publicKey: String): String? {
         var encryptedString: String? = null
         try {
-            val key = stringToRSAPublicKey(publicKey)
+            val key = stringToPublicKeyRSA(publicKey)
             encryptedString = encryptFromKeyRSA(plaintext, key)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -47,7 +113,7 @@ object KeyManager {
     fun maybeDecryptRSA(ciphertext: String, privateKey: String): String? {
         var decryptedString: String? = null
         try {
-            val key = stringToRSAPrivateKey(privateKey)
+            val key = stringToPrivateKeyRSA(privateKey)
             decryptedString = decryptFromKeyRSA(ciphertext, key)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -56,11 +122,11 @@ object KeyManager {
         return decryptedString
     }
 
-    private fun generateKeyPair(): KeyPair? {
+    private fun generateKeyPairRSA(): KeyPair? {
         var kp: KeyPair? = null
         try {
             val kpg = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
-            kpg.initialize(2048)
+            kpg.initialize(RSA_KEY_SIZE)
             kp = kpg.generateKeyPair()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -68,7 +134,7 @@ object KeyManager {
         return kp
     }
 
-    private fun stringToRSAPublicKey(publicKey: String): PublicKey {
+    private fun stringToPublicKeyRSA(publicKey: String): PublicKey {
         val keyFac = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
         // Convert the public key string into X509EncodedKeySpec format.
         val keySpec = X509EncodedKeySpec(
@@ -81,7 +147,7 @@ object KeyManager {
         return keyFac.generatePublic(keySpec)
     }
 
-    private fun stringToRSAPrivateKey(privateKey: String): PrivateKey {
+    private fun stringToPrivateKeyRSA(privateKey: String): PrivateKey {
         val keyFac = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
         // Convert the public key string into PKCS8EncodedKeySpec format.
         val keySpec = PKCS8EncodedKeySpec(
@@ -114,5 +180,13 @@ object KeyManager {
         val encryptedBytes = Base64.decode(ciphertext, Base64.DEFAULT)
         val decryptedBytes = cipher.doFinal(encryptedBytes)
         return String(decryptedBytes)
+    }
+
+    /**
+     *  Useful functions.
+     */
+
+    fun keyAsString(key: Key): String {
+        return Base64.encodeToString(key.encoded, Base64.NO_WRAP)
     }
 }
