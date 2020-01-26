@@ -13,7 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
-import com.karensarmiento.collaborationapp.security.KeyManager
+import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import com.karensarmiento.collaborationapp.utils.Utils
 import kotlinx.android.synthetic.main.activity_sign_in.*
@@ -94,7 +94,7 @@ class SignInActivity : AppCompatActivity() {
     private fun onUserLoggedIn() {
         // TODO: Check if user is registered with server or not. If not, then gen and send public
         // key.
-        val publicKey = KeyManager.getPublicKeyAsString()
+        val publicKey = EncryptionManager.getPublicKeyAsString()
         Firebase.sendRegisterPublicKeyRequest(publicKey)
 
         button_next_page.isEnabled = true

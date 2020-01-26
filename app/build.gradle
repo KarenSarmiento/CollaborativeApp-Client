@@ -39,6 +39,7 @@ dependencies {
     implementation "org.igniterealtime.smack:smack-tcp:4.1.0"
     implementation "androidx.preference:preference-ktx:1.1.0"
     implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation group: 'org.glassfish', name: 'javax.json', version: '1.0.4'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testImplementation "io.mockk:mockk:1.9.3.kotlin12"

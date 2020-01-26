@@ -1,6 +1,6 @@
 package com.karensarmiento.collaborationapp
 
-import com.karensarmiento.collaborationapp.security.KeyManager
+import com.karensarmiento.collaborationapp.security.EncryptionManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -8,7 +8,19 @@ import org.junit.runner.RunWith
 import org.mockito.junit.MockitoJUnitRunner
 
 @RunWith(MockitoJUnitRunner::class)
-class KeyManagerTest {
+class EncryptionManagerTest {
+    @Test
+    fun conversionBetweenStringAndSecretKeyIsSuccessful() {
+        // GIVEN
+        val secretKey = EncryptionManager.generateKeyAESGCM()
+
+        // WHEN
+        val secretKeyString = EncryptionManager.keyAsString(secretKey)
+        val secretKeyRecovered = EncryptionManager.stringToKeyAESGCM(secretKeyString)
+
+        // THEN
+        assertEquals(secretKey, secretKeyRecovered)
+    }
 
     @Test
     fun encryptingPlaintextOutputsNonEqualCiphertextAES_GCM() {
@@ -16,10 +28,10 @@ class KeyManagerTest {
         val plaintext = "This is a long secret test message. " +
                 "This is a long secret test message. This is a long secret test message. " +
                 "This is a long secret test message. This is a long secret test message."
-        val secretKey = KeyManager.generateKeyAESGCM()
+        val secretKey = EncryptionManager.generateKeyAESGCM()
 
         // WHEN
-        val ciphertext = KeyManager.encryptAESGCM(plaintext, secretKey)
+        val ciphertext = EncryptionManager.encryptAESGCM(plaintext, secretKey)
 
         // THEN
         assertNotEquals(plaintext, ciphertext)
@@ -31,11 +43,11 @@ class KeyManagerTest {
         val plaintext = "This is a long secret test message. " +
                 "This is a long secret test message. This is a long secret test message. " +
                 "This is a long secret test message. This is a long secret test message."
-        val secretKey = KeyManager.generateKeyAESGCM()
+        val secretKey = EncryptionManager.generateKeyAESGCM()
 
         // WHEN
-        val ciphertext = KeyManager.encryptAESGCM(plaintext, secretKey)
-        val recoveredPlaintext = KeyManager.decryptAESGCM(ciphertext, secretKey)
+        val ciphertext = EncryptionManager.encryptAESGCM(plaintext, secretKey)
+        val recoveredPlaintext = EncryptionManager.decryptAESGCM(ciphertext, secretKey)
 
         // THEN
         assertEquals(plaintext, recoveredPlaintext)
@@ -46,10 +58,10 @@ class KeyManagerTest {
     fun encryptingPlaintextOutputsNonEqualCiphertextRSA() {
         // GIVEN
         val plaintext = "This is a secret test message."
-        val publicKey = KeyManager.getPublicKeyAsString()
+        val publicKey = EncryptionManager.getPublicKeyAsString()
 
         // WHEN
-        val ciphertext = KeyManager.maybeEncryptRSA(plaintext, publicKey)
+        val ciphertext = EncryptionManager.maybeEncryptRSA(plaintext, publicKey)
 
         // THEN
         assertNotEquals(plaintext, ciphertext)
@@ -59,12 +71,12 @@ class KeyManagerTest {
     fun decryptingCiphertextRecoversPlaintextRSA() {
         // GIVEN
         val plaintext = "This is a secret test message."
-        val privateKey = KeyManager.getPrivateKeyAsString()
-        val publicKey = KeyManager.getPublicKeyAsString()
-        val ciphertext = KeyManager.maybeEncryptRSA(plaintext, publicKey)
+        val privateKey = EncryptionManager.getPrivateKeyAsString()
+        val publicKey = EncryptionManager.getPublicKeyAsString()
+        val ciphertext = EncryptionManager.maybeEncryptRSA(plaintext, publicKey)
 
         // WHEN
-        val recoveredPlaintext = KeyManager.maybeDecryptRSA(ciphertext!!, privateKey)
+        val recoveredPlaintext = EncryptionManager.maybeDecryptRSA(ciphertext!!, privateKey)
 
         // THEN
         assertEquals(plaintext, recoveredPlaintext)

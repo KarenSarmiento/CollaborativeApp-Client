@@ -5,8 +5,10 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
 import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.json.JSONArray
+import javax.json.Json
 
 /**
  *  This handles the sending of upstream messages to the app server.
@@ -17,16 +19,37 @@ object FirebaseMessageSendingService {
 
     // TODO: Add comments containing JSON example for each of these methods.
     fun sendRegisterPublicKeyRequest(publicKey: String) {
+        // Crate request.
+        val request = Json.createObjectBuilder()
+            .add(Jk.UPSTREAM_TYPE.text, Jk.REGISTER_PUBLIC_KEY.text)
+            .add(Jk.EMAIL.text, Utils.getGoogleEmail())
+            .add(Jk.PUBLIC_KEY.text, publicKey).build().toString()
+
+        // Send request to server.
         val messageId = Utils.getUniqueId()
+        sendEncryptedServerRequest(request, messageId)
+        Log.i(TAG, "Sent register public key request to server: $messageId")
+    }
+
+    private fun sendEncryptedServerRequest(request: String, messageId: String) {
+        // Encrypt request.
+        val aesKey = EncryptionManager.generateKeyAESGCM()
+        var encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
+        var aesKeyString = EncryptionManager.keyAsString(aesKey)
+        val encryptedKey = EncryptionManager.maybeEncryptRSA(aesKeyString, EncryptionManager.FB_SERVER_PUBLIC_KEY)
+        if (encryptedKey == null) {
+            Log.e(TAG, "Could not encrypt request. Will not send message.")
+            return
+        }
+
+        // Send encrypted request.
         FirebaseMessaging.getInstance().send(
             RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId(messageId)
                 .setTtl(TTL)
-                .addData(Jk.UPSTREAM_TYPE.text, Jk.REGISTER_PUBLIC_KEY.text)
-                .addData(Jk.EMAIL.text, Utils.getGoogleEmail())
-                .addData(Jk.PUBLIC_KEY.text, publicKey)
+                .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
+                .addData(Jk.ENC_KEY.text, encryptedKey)
                 .build())
-        Log.i(TAG, "Sent register public key request to server: $messageId")
     }
 
     fun sendJsonUpdateToCurrentDeviceGroup(jsonUpdate: String) {

@@ -11,20 +11,23 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.nio.ByteBuffer
+import javax.crypto.spec.SecretKeySpec
 
 
-object KeyManager {
+object EncryptionManager {
 
-    private const val TAG = "KeyManager"
+    private const val TAG = "EncryptionManager"
 
     private const val AES_TRANSFORMATION = "AES/GCM/NoPadding"
     private const val AES_KEY_SIZE = 256
     private const val AES_IV_LENGTH = 12
     private const val AES_AUTH_TAG_LENGTH = 128
 
-    private const val RSA_TRANSFORMATION = "RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING"
+    private const val RSA_TRANSFORMATION = "RSA/ECB/PKCS1Padding"
     private const val RSA_KEY_SIZE = 2048
+
     private lateinit var personalKeys: KeyPair
+    const val FB_SERVER_PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl4h5aMuQW07/2MyK2UL4G4LUHWN4KT68WIecV/Vxe9eqN9juV6ZU2j5ReCY345zcQA5vfYTftadUBd9QbfJ4G2w9FqI6z1oriOs89pPx9F28HWqz7ZKWDMA9TVi36qgovQ6PQjJuEmRG2PpLFX9PbsiyDlfI07Lc/YLnVO02P9jjpBxj1NezXHfJlIeTG0Mw7qE/nEzn4N22J34JaNzyIy8jn4Nz/W+syetf0UZt25XIDPlKZOSnbykekiLhNipSNfSQvttV1k3Ma1wF3G1OVGueVBA81dxpARCzpSHNc4tAomxLxCkDge335MCdIcoiW3AupEVvQ3j7aBIYzJJEiwIDAQAB"
 
     init {
         val genKeys = generateKeyPairRSA()
@@ -188,5 +191,10 @@ object KeyManager {
 
     fun keyAsString(key: Key): String {
         return Base64.encodeToString(key.encoded, Base64.NO_WRAP)
+    }
+
+    fun stringToKeyAESGCM(key: String): SecretKey {
+        val decodedKey = Base64.decode(key, Base64.DEFAULT)
+        return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
     }
 }
