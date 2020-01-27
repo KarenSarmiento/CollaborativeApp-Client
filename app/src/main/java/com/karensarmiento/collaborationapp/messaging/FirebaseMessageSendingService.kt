@@ -94,6 +94,8 @@ object FirebaseMessageSendingService {
                 .setTtl(TTL)
                 .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
                 .addData(Jk.ENC_KEY.text, encryptedKey)
+                //TODO: Change identifier to from email something non public e.g. random gen string associated with email.
+                .addData(Jk.EMAIL.text, Utils.getGoogleEmail())
                 .build())
     }
 }

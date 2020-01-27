@@ -5,9 +5,10 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
 import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.security.EncryptionManager
+import com.karensarmiento.collaborationapp.utils.*
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
-import com.karensarmiento.collaborationapp.utils.Utils
-import org.json.JSONArray
+import javax.json.JsonObject
 
 
 /**
@@ -27,19 +28,45 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.i(TAG, "Received message!! ${remoteMessage.messageId}")
-
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: " + remoteMessage.data)
+            Log.d(TAG, "Received message with data payload: " + remoteMessage.data)
+            // TODO: Decrypt all messages when downstream encryption for json update is supported.
+            var downstreamType = getStringOrNullFromMap(remoteMessage.data, Jk.DOWNSTREAM_TYPE.text)
+            var decryptedMessage: JsonObject? = null
+            if (downstreamType == null) {
+                decryptedMessage = getDecryptedMessage(remoteMessage.data)
+                if (decryptedMessage == null) {
+                    Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
+                            " Will ignore it.")
+                    return
+                }
+                downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)
+                Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
+            }
 
-            when(val downstreamType = remoteMessage.data[Jk.DOWNSTREAM_TYPE.text]) {
+            when(downstreamType) {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.JSON_UPDATE.text-> handleJsonUpdateMessage(remoteMessage)
-                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(remoteMessage)
-                else -> handleResponseMessage(downstreamType, remoteMessage)
+                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage!!)
+                else -> handleResponseMessage(downstreamType, decryptedMessage!!) //TODO: Null safety!!
             }
         }
+    }
+
+    private fun getDecryptedMessage(data: Map<String, String>): JsonObject? {
+        // Get encrypted AES key and data.
+        val encryptedKey = getStringOrNullFromMap(data, Jk.ENC_KEY.text) ?: return null
+        val encryptedMessage = getStringOrNullFromMap(data, Jk.ENC_MESSAGE.text) ?: return null
+
+        // Decrypt AES key and obtain SecretKey object.
+        val privateKey = EncryptionManager.getPrivateKeyAsString()
+        val decryptedKey = EncryptionManager.maybeDecryptRSA(encryptedKey, privateKey) ?: return null
+        val secretKey = EncryptionManager.stringToKeyAESGCM(decryptedKey)
+
+        // Decrypt Message and return as JSON object.
+        val decryptedMessage = EncryptionManager.decryptAESGCM(encryptedMessage, secretKey)
+        return jsonStringToJsonObject(decryptedMessage)
     }
 
     /**
@@ -62,6 +89,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             if (processUpdate) {
                 // TODO: Store these changes in a file in case the user is offline.
                 broadcastIntent(Jk.JSON_UPDATE.text, jsonUpdate!!)
+                Log.i(TAG, "Sent JSON update intent.")
             }
         }
     }
@@ -69,11 +97,11 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     /**
      *  Upon being added to a group, register the group for the user.
      *
-     *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
+     *  @param message JsonObject representing the message received from Firebase Cloud Messaging.
      */
-    private fun handleAddedToGroupMessage(remoteMessage: RemoteMessage) {
-        val groupName = remoteMessage.data[Jk.GROUP_NAME.text]
-        val groupId = remoteMessage.data[Jk.GROUP_ID.text]
+    private fun handleAddedToGroupMessage(message: JsonObject) {
+        val groupName = getStringOrNull(message, Jk.GROUP_NAME.text)
+        val groupId = getStringOrNull(message, Jk.GROUP_ID.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
         registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId)
@@ -83,20 +111,16 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  Resolve corresponding request ID from waitingRequests maps and handle.
      *
      *  @param downstreamType The type of downstream message.
-     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
+     *  @param response JsonObject representing the message received from Firebase Cloud Messaging.
      */
-    private fun handleResponseMessage(downstreamType: String, responseMessage: RemoteMessage) {
-        val requestId = responseMessage.data[Jk.REQUEST_ID.text]
-        if (requestId == null) {
-            Log.w(TAG, "No request id was found in the packet. It will be ignored.")
-            return
-        }
+    private fun handleResponseMessage(downstreamType: String, response: JsonObject) {
+        val requestId = getStringOrNull(response, Jk.REQUEST_ID.text) ?: return
         if (!MessageBuffer.tryResolveRequest(requestId))
             return
 
         when(downstreamType) {
-            Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(responseMessage)
-            Jk.CREATE_GROUP_RESPONSE.text -> handleCreateGroupResponse(responseMessage)
+            Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(response)
+            Jk.CREATE_GROUP_RESPONSE.text -> handleCreateGroupResponse(response)
             else -> Log.w(TAG, "Downstream type $downstreamType not yet supported.")
         }
     }
@@ -104,31 +128,28 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     /**
      *  Apply the callback to the received notification key or report an error.
      *
-     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
-     *  @param callback The callback to apply to the received notification key.
+     *  @param response JsonObject representing the message received from Firebase Cloud Messaging.
      */
-    private fun handleNotificationKeyResponse(responseMessage: RemoteMessage) {
-        val notificationKey = responseMessage.data[Jk.NOTIFICATION_KEY.text]
-        if (notificationKey == null) {
-            Log.w(TAG, "No notification key was found in a notification key response message.")
-        }
+    private fun handleNotificationKeyResponse(response: JsonObject) {
+        val notificationKey = getStringOrNull(response, Jk.NOTIFICATION_KEY.text) ?: return
     }
 
     /**
      *  Apply the callback to the received notification key or report an error.
      *
-     *  @param responseMessage Object representing the message received from Firebase Cloud Messaging.
+     *  @param response JsonObject representing the message received from Firebase Cloud Messaging.
      */
-    private fun handleCreateGroupResponse(responseMessage: RemoteMessage) {
-        val success = responseMessage.data[Jk.SUCCESS.text]
-        if (success != null && success.toBoolean()) {
+    private fun handleCreateGroupResponse(response: JsonObject) {
+        val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
+        if (success) {
             // Register group.
-            registerValidatedGroupAndBroadcastOnSuccess(
-                responseMessage.data[Jk.GROUP_NAME.text], responseMessage.data[Jk.GROUP_ID.text])
+            val groupName = getStringOrNull(response, Jk.GROUP_NAME.text)
+            val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
+            registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId)
 
-            // Notify of any failures
-            val failedEmails = JSONArray(responseMessage.data[Jk.FAILED_EMAILS.text])
-            if (failedEmails.length() == 0)
+            // Log any failures. (Notify user?)
+            val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
+            if (failedEmails.size == 0)
                 Log.i(TAG, "Successfully created group!")
             else
                 Log.i(TAG, "Successfully created group but failed to add $failedEmails.")
@@ -177,6 +198,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val updateIntent = Intent()
         updateIntent.action = action
         updateIntent.putExtra(Jk.VALUE.text, value)
+        Log.i(TAG, "Calling sendBroadcast on intent: $updateIntent")
         sendBroadcast(updateIntent)
     }
 
