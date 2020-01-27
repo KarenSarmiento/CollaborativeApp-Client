@@ -1,4 +1,4 @@
-//package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp
 //
 //import android.content.Intent
 //import com.google.firebase.messaging.RemoteMessage
@@ -13,7 +13,7 @@
 //
 //
 //@RunWith(MockitoJUnitRunner::class)
-//class UnitTestSample {
+//class FirebaseMessageReceivingServiceTest {
 //
 //    @Test
 //    fun whenReceiveJsonUpdateThenBroadcastIntent() {
