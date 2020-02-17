@@ -113,6 +113,10 @@ object EncryptionManager {
         return encryptedString?.replace("(\\r|\\n)".toRegex(), "")
     }
 
+    fun decryptWithOwnPrivateKey(ciphertext: String): String {
+        return decryptFromKeyRSA(ciphertext, personalKeys.private)
+    }
+
     fun maybeDecryptRSA(ciphertext: String, privateKey: String): String? {
         var decryptedString: String? = null
         try {

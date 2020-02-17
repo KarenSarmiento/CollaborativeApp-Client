@@ -28,7 +28,7 @@ enum class JsonKeyword(val text: String) {
     NOTIFICATION_KEY("notification_key"),
     GET_NOTIFICATION_KEY_RESPONSE("get_notification_key_response"),
 
-    // Creating a group
+    // Creating a group.
     CREATE_GROUP("create_group"),
     GROUP_ID("group_id"),
     MEMBER_EMAILS("member_emails"),
@@ -36,6 +36,16 @@ enum class JsonKeyword(val text: String) {
     FAILED_EMAILS("failed_emails"),
     ADDED_TO_GROUP("added_to_group"),
     GROUP_NAME("group_name"),
+    MEMBERS("members"),
+
+    // Peer messaging.
+    FORWARD_TO_PEER("forward_to_peer"),
+    PEER_TYPE("peer_type"),
+    PEER_EMAIL("peer_email"),
+    PEER_MESSAGE("peer_message"),
+    SYMMETRIC_KEY_UPDATE("symmetric_key_update"),
+    SYMMETRIC_KEY("symmetric_key"),
+    // TODO: Add timestamp for when group key can change.
 
     // Sending messages to device groups.
     FORWARD_MESSAGE("forward_message"),

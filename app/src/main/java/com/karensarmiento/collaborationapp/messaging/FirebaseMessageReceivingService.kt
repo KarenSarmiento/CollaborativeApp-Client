@@ -4,9 +4,12 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
+import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.utils.*
+import javax.crypto.SecretKey
+import javax.json.JsonArray
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import javax.json.JsonObject
 
@@ -49,9 +52,39 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.JSON_UPDATE.text-> handleJsonUpdateMessage(remoteMessage)
                 Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage!!)
+                Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage!!)
                 else -> handleResponseMessage(downstreamType, decryptedMessage!!) //TODO: Null safety!!
             }
         }
+    }
+
+    /**
+     *  Handles updates sent from peers.
+     */
+    private fun handleForwardToPeerMessage(message: JsonObject) {
+        // Decrypt message using private key.
+        val peerMessage = getStringOrNull(message, Jk.PEER_MESSAGE.text) ?: return
+        val decryptedMessage = EncryptionManager.decryptWithOwnPrivateKey(peerMessage)
+        val decryptedJson = jsonStringToJsonObject(decryptedMessage)
+
+        // Handle the message
+        when(val peerType = getStringOrNull(decryptedJson, Jk.PEER_TYPE.text)) {
+            null -> Log.w(TAG, "No peer type was specified in received message.")
+            Jk.SYMMETRIC_KEY_UPDATE.text -> handleSymmetricKeyUpdate(decryptedJson)
+            else ->  Log.w(TAG, "Peer type $peerType not yet supported.")
+        }
+    }
+
+    /**
+     *  Handle updates to group symmetric keys.
+     */
+    private fun handleSymmetricKeyUpdate(message: JsonObject) {
+        val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
+        val key = getStringOrNull(message, Jk.SYMMETRIC_KEY.text) ?: return
+
+        val groupName = GroupManager.groupName(groupId) ?: return
+        GroupManager.setGroupKey(groupName, EncryptionManager.stringToKeyAESGCM(key))
+        Log.i(TAG , "Updated group key for group $groupName.")
     }
 
     private fun getDecryptedMessage(data: Map<String, String>): JsonObject? {
@@ -102,9 +135,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     private fun handleAddedToGroupMessage(message: JsonObject) {
         val groupName = getStringOrNull(message, Jk.GROUP_NAME.text)
         val groupId = getStringOrNull(message, Jk.GROUP_ID.text)
+        val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members)
     }
 
     /**
@@ -145,7 +179,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             // Register group.
             val groupName = getStringOrNull(response, Jk.GROUP_NAME.text)
             val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
-            registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId)
+            val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
+            val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
+                groupName, groupId, members) ?: return
 
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
@@ -153,24 +189,66 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 Log.i(TAG, "Successfully created group!")
             else
                 Log.i(TAG, "Successfully created group but failed to add $failedEmails.")
+
+            // Create symmetric group key and send to peers.
+            val aesKey = EncryptionManager.generateKeyAESGCM()
+            GroupManager.setGroupKey(registeredGroupName, aesKey)
+            sendAesKeyToPeers(registeredGroupName, aesKey)
+
         } else {
             Log.i(TAG, "Failed to create new group.")
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?) {
+    private fun sendAesKeyToPeers(groupName: String, key: SecretKey) {
+        val groupToken = GroupManager.groupId(groupName) ?: return
+        val peers = GroupManager.getMembers(groupName) ?: return
+        for (peer in peers) {
+            FirebaseMessageSendingService.sendSymmetricKeyToPeer(
+                peer, groupToken, EncryptionManager.keyAsString(key))
+        }
+    }
+
+    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
-            return
+            return null
         }
+
+        if (members == null) {
+            Log.w(TAG, "Attempted to register group but no members were specified. Will ignore request.")
+            return null
+        }
+
         var usedGroupName = groupName
         if (usedGroupName == null) {
             Log.w(TAG, "Attempted to register group but no group name was specified. Will use group id.")
             usedGroupName = groupId
         }
+
+        val memberEmails = mutableSetOf<String>()
+        for (member in members) {
+            val memberObject = member as JsonObject
+            val email = getStringOrNull(memberObject, Jk.EMAIL.text)
+            val token = getStringOrNull(memberObject, Jk.NOTIFICATION_KEY.text)
+            val publicKey = getStringOrNull(memberObject, Jk.PUBLIC_KEY.text)
+
+            if (email == null || token == null || publicKey == null) {
+                Log.e(TAG, "Cannot add user with email $email, token $token and public key " +
+                        "$publicKey since one of these values are null. Will skip.")
+                continue
+            }
+            if (email != Utils.getGoogleEmail()) {
+                memberEmails.add(email)
+                AddressBook.addContact(email, token, publicKey)
+            }
+        }
+
         // TODO: Apply check to see if group name exists, in which case add (1) to the end.
-        GroupManager.registerGroup(usedGroupName, groupId)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
+
+        return usedGroupName
     }
 
     /**

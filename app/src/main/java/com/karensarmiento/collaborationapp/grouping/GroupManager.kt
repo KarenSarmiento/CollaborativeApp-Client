@@ -1,19 +1,25 @@
 package com.karensarmiento.collaborationapp.grouping
 
 import android.util.Log
+import javax.crypto.SecretKey
 
 
 object GroupManager {
     private const val TAG = "GroupManager"
 
     // TODO: Persist group ids to memory.
-    // Maps group names to group ids.
-    private val ownedGroups: MutableMap<String, String> = mutableMapOf()
+    // TODO: Eliminate group name and incorporate it into the todo list json.
+
+    /**
+     *  Maps groupName (human-readable, locally unique group identifier) to group data.
+     */
+    private val groups: MutableMap<String, GroupData> = mutableMapOf()
+
     var currentGroup: String? = null
         get() = field
 
     fun maybeSetCurrentGroup(groupName: String): Boolean {
-        if (ownedGroups.containsKey(groupName)) {
+        if (groups.containsKey(groupName)) {
             currentGroup = groupName
             return true
         }
@@ -22,15 +28,54 @@ object GroupManager {
     }
 
     fun groupId(groupName: String): String? {
-        return ownedGroups[groupName]
+        return groups[groupName]?.groupId
     }
 
-    fun registerGroup(groupName: String, groupId: String) {
+    fun registerGroup(groupName: String, groupId: String, memberEmails: MutableSet<String>, key: SecretKey? = null) {
+        if (groupName in groups) {
+            Log.e(TAG, "Cannot register group with name $groupName since group already exists.")
+            return
+        }
+        groups[groupName] = GroupData(groupId, memberEmails, key)
         Log.i(TAG, "Registered $groupName to groupId $groupId.")
-        ownedGroups[groupName] = groupId
     }
 
     fun getAllRegisteredGroups(): MutableSet<String> {
-        return ownedGroups.keys
+        return groups.keys
+    }
+
+    fun setGroupKey(groupName: String, aesKey: SecretKey) {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot set key for group $groupName since this group does not exist.")
+            return
+        }
+
+        val curr = groups[groupName]!!
+        groups[groupName] = GroupData(curr.groupId, curr.members, aesKey)
+    }
+
+    fun getMembers(groupName: String): Set<String>? {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot get members group group $groupName since this group does not exist.")
+            return null
+        }
+        return groups[groupName]?.members as Set<String>
+    }
+
+    // TODO: Once eliminated group name, remove this method. Avoid linear search!!
+    fun groupName(groupId: String): String? {
+        for ((groupName, groupData) in groups) {
+            if (groupData.groupId == groupId)
+                return groupName
+        }
+        Log.i(TAG, "No group name was found for group id $groupId")
+        return null
     }
 }
+
+/**
+ *  Contains all data associated with a group.
+ *
+ *  GroupId is a globally unique identifier for the group.
+ */
+data class GroupData(var groupId: String, val members: MutableSet<String>, val key: SecretKey?)

@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.messaging
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
+import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -16,6 +17,32 @@ import javax.json.Json
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
     private const val TTL = 2000
+
+    fun sendSymmetricKeyToPeer(peerEmail: String, groupId: String, key: String) {
+        // Build message containing symmetric key.
+        val peerMessage = Json.createObjectBuilder()
+            .add(Jk.PEER_TYPE.text, Jk.SYMMETRIC_KEY_UPDATE.text)
+            .add(Jk.GROUP_ID.text, groupId)
+            .add(Jk.SYMMETRIC_KEY.text, key)
+            .build().toString()
+
+        // Encrypt peer message with peer's key.
+        // TODO: Need AES? Will message always be small enough without AES?
+        val peerKey = AddressBook.getContactKey(peerEmail) ?: return
+        val encryptedPeerMessage = EncryptionManager.maybeEncryptRSA(peerMessage, peerKey) ?: return
+
+        // Create request.
+        val request = Json.createObjectBuilder()
+            .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_PEER.text)
+            .add(Jk.PEER_EMAIL.text, peerEmail)
+            .add(Jk.PEER_MESSAGE.text, encryptedPeerMessage)
+            .build().toString()
+
+        // Send request to server.
+        val messageId = Utils.getUniqueId()
+        sendEncryptedServerRequest(request, messageId)
+        Log.i(TAG, "Sent register public key request to server: $messageId")
+    }
 
     fun sendRegisterPublicKeyRequest(publicKey: String) {
         // Create request.
@@ -42,7 +69,7 @@ object FirebaseMessageSendingService {
 
     private fun sendJsonUpdateToDeviceGroup(groupName: String, jsonUpdate: String) {
         // Create request.
-        val groupToken = GroupManager.groupId(groupName)
+        val groupToken = GroupManager.groupId(groupName) ?: return
         val request = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_MESSAGE.text)
             .add(Jk.FORWARD_TOKEN_ID.text, groupToken)
