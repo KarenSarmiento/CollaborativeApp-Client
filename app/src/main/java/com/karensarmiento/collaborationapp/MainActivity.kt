@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        val intentFilter = IntentFilter(Jk.JSON_UPDATE.text)
+        val intentFilter = IntentFilter(Jk.GROUP_MESSAGE.text)
         registerReceiver(jsonUpdateListener, intentFilter)
     }
 

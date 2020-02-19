@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.authentication
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -87,6 +88,7 @@ class SignInActivity : AppCompatActivity() {
             else {
                 Toast.makeText(this, "Firebase sign in failed.", Toast.LENGTH_LONG)
                     .show()
+                Log.e(TAG, "Failed to sign in to firebase with exception: ${it.exception}")
             }
         }
     }

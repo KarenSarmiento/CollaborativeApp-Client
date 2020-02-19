@@ -25,8 +25,8 @@ package com.karensarmiento.collaborationapp
 //        val email = "test@gmail.com"
 //        val messageMock = mock(RemoteMessage::class.java)
 //        `when`(messageMock.data).thenReturn(mapOf(
-//            Jk.DOWNSTREAM_TYPE.text to Jk.JSON_UPDATE.text,
-//            Jk.JSON_UPDATE.text to jsonUpdate,
+//            Jk.DOWNSTREAM_TYPE.text to Jk.GROUP_MESSAGE.text,
+//            Jk.GROUP_MESSAGE.text to jsonUpdate,
 //            Jk.EMAIL.text to email
 //        ))
 //
@@ -35,7 +35,7 @@ package com.karensarmiento.collaborationapp
 //
 //        // THEN
 //        val expectedIntent = Intent()
-//        expectedIntent.action = Jk.JSON_UPDATE.text
+//        expectedIntent.action = Jk.GROUP_MESSAGE.text
 //        expectedIntent.putExtra(Jk.VALUE.text, jsonUpdate)
 //        verify(fmrsMock /*as ContextWrapper*/).sendBroadcast(argThat(IntentMatcher(expectedIntent)))
 //    }

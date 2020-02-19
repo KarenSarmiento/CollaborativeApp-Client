@@ -34,26 +34,20 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Received message with data payload: " + remoteMessage.data)
-            // TODO: Decrypt all messages when downstream encryption for json update is supported.
-            var downstreamType = getStringOrNullFromMap(remoteMessage.data, Jk.DOWNSTREAM_TYPE.text)
-            var decryptedMessage: JsonObject? = null
-            if (downstreamType == null) {
-                decryptedMessage = getDecryptedMessage(remoteMessage.data)
-                if (decryptedMessage == null) {
-                    Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
-                            " Will ignore it.")
-                    return
-                }
-                downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)
-                Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
+            val decryptedMessage = getDecryptedMessage(remoteMessage.data)
+            if (decryptedMessage == null) {
+                Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
+                        " Will ignore it.")
+                return
             }
+            Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
 
-            when(downstreamType) {
+            when(val downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)) {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
-                Jk.JSON_UPDATE.text-> handleJsonUpdateMessage(remoteMessage)
-                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage!!)
-                Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage!!)
-                else -> handleResponseMessage(downstreamType, decryptedMessage!!) //TODO: Null safety!!
+                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage)
+                Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage)
+                Jk.FORWARD_TO_GROUP.text-> handleJsonUpdateMessage(decryptedMessage)
+                else -> handleResponseMessage(downstreamType, decryptedMessage)
             }
         }
     }
@@ -107,24 +101,13 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *
      *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
-    private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
-        Utils.onCurrentFirebaseToken { currToken ->
-            var processUpdate = true
-            if (remoteMessage.data[Jk.ORIGINATOR.text] == currToken) {
-                Log.i(TAG, "Ignoring message sent from self.")
-                processUpdate = false
-            }
-            val jsonUpdate = remoteMessage.data[Jk.JSON_UPDATE.text]
-            if (jsonUpdate == null) {
-                Log.w(TAG, "Received json_update message with no jsonUpdate - will ignore it.")
-                processUpdate = false
-            }
-            if (processUpdate) {
-                // TODO: Store these changes in a file in case the user is offline.
-                broadcastIntent(Jk.JSON_UPDATE.text, jsonUpdate!!)
-                Log.i(TAG, "Sent JSON update intent.")
-            }
-        }
+    private fun handleJsonUpdateMessage(message: JsonObject) {
+        val groupMessage = getStringOrNull(message, Jk.GROUP_MESSAGE.text) ?: return
+        // TODO: Decrypt.
+        val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
+
+        broadcastIntent(Jk.GROUP_MESSAGE.text, groupMessage)
+        Log.i(TAG, "Sent JSON update intent.")
     }
 
     /**

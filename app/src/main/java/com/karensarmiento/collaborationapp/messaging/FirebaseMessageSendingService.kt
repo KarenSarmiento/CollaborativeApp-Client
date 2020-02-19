@@ -71,9 +71,9 @@ object FirebaseMessageSendingService {
         // Create request.
         val groupToken = GroupManager.groupId(groupName) ?: return
         val request = Json.createObjectBuilder()
-            .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_MESSAGE.text)
-            .add(Jk.FORWARD_TOKEN_ID.text, groupToken)
-            .add(Jk.JSON_UPDATE.text, jsonUpdate)
+            .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_GROUP.text)
+            .add(Jk.GROUP_ID.text, groupToken)
+            .add(Jk.GROUP_MESSAGE.text, jsonUpdate)
             .build().toString()
 
         // Send request to server.

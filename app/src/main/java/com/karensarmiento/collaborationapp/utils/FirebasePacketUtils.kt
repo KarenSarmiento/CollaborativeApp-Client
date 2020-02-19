@@ -48,9 +48,8 @@ enum class JsonKeyword(val text: String) {
     // TODO: Add timestamp for when group key can change.
 
     // Sending messages to device groups.
-    FORWARD_MESSAGE("forward_message"),
-    FORWARD_TOKEN_ID("forward_token_id"),
-    JSON_UPDATE("json_update"),
+    FORWARD_TO_GROUP("forward_to_group"),
+    GROUP_MESSAGE("group_message"),
     ORIGINATOR("originator"),
 
     // Intents
