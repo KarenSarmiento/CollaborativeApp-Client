@@ -103,10 +103,25 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     private fun handleJsonUpdateMessage(message: JsonObject) {
         val groupMessage = getStringOrNull(message, Jk.GROUP_MESSAGE.text) ?: return
-        // TODO: Decrypt.
         val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
 
-        broadcastIntent(Jk.GROUP_MESSAGE.text, groupMessage)
+        // Decrypt the message
+        val groupName = GroupManager.groupName(groupId)
+        if (groupName == null) {
+            Log.e(TAG, "Could not decrypt message since we do not own a group under the id" +
+                    groupId)
+            return
+        }
+        val groupKey = GroupManager.getGroupKey(groupName)
+        if (groupKey == null) {
+            Log.e(TAG, "Could not decrypt message since we do not own a group key for" +
+                    "group $groupId. Will drop packet.")
+            return
+        }
+        val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
+
+        // Apply the update.
+        broadcastIntent(Jk.GROUP_MESSAGE.text, decryptedUpdate)
         Log.i(TAG, "Sent JSON update intent.")
     }
 

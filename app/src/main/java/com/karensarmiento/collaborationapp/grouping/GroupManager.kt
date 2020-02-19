@@ -18,6 +18,10 @@ object GroupManager {
     var currentGroup: String? = null
         get() = field
 
+    fun getCurrentGroupKey(): SecretKey? {
+        return groups[currentGroup]?.key
+    }
+
     fun maybeSetCurrentGroup(groupName: String): Boolean {
         if (groups.containsKey(groupName)) {
             currentGroup = groupName
@@ -42,6 +46,10 @@ object GroupManager {
 
     fun getAllRegisteredGroups(): MutableSet<String> {
         return groups.keys
+    }
+
+    fun getGroupKey(groupName: String): SecretKey? {
+        return groups[groupName]?.key
     }
 
     fun setGroupKey(groupName: String, aesKey: SecretKey) {
