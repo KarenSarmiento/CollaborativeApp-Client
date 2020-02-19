@@ -34,26 +34,20 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Received message with data payload: " + remoteMessage.data)
-            // TODO: Decrypt all messages when downstream encryption for json update is supported.
-            var downstreamType = getStringOrNullFromMap(remoteMessage.data, Jk.DOWNSTREAM_TYPE.text)
-            var decryptedMessage: JsonObject? = null
-            if (downstreamType == null) {
-                decryptedMessage = getDecryptedMessage(remoteMessage.data)
-                if (decryptedMessage == null) {
-                    Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
-                            " Will ignore it.")
-                    return
-                }
-                downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)
-                Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
+            val decryptedMessage = getDecryptedMessage(remoteMessage.data)
+            if (decryptedMessage == null) {
+                Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
+                        " Will ignore it.")
+                return
             }
+            Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
 
-            when(downstreamType) {
+            when(val downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)) {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.JSON_UPDATE.text-> handleJsonUpdateMessage(remoteMessage)
-                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage!!)
-                Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage!!)
-                else -> handleResponseMessage(downstreamType, decryptedMessage!!) //TODO: Null safety!!
+                Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage)
+                Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage)
+                else -> handleResponseMessage(downstreamType, decryptedMessage) //TODO: Null safety!!
             }
         }
     }
@@ -109,6 +103,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     private fun handleJsonUpdateMessage(remoteMessage: RemoteMessage) {
         Utils.onCurrentFirebaseToken { currToken ->
+            // We only process updates that are valid and sent from peers (not ourselves).
             var processUpdate = true
             if (remoteMessage.data[Jk.ORIGINATOR.text] == currToken) {
                 Log.i(TAG, "Ignoring message sent from self.")
@@ -119,7 +114,15 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 Log.w(TAG, "Received json_update message with no jsonUpdate - will ignore it.")
                 processUpdate = false
             }
+
             if (processUpdate) {
+                // Decrypt the update.
+                Log.i(TAG, "Started with jsonUpdate: $jsonUpdate")
+//                val groupId = getStringOrNull()
+
+                Log.i(TAG, "Decrypted jsonUpdate as: $jsonUpdate")
+
+                // Handle the update.
                 // TODO: Store these changes in a file in case the user is offline.
                 broadcastIntent(Jk.JSON_UPDATE.text, jsonUpdate!!)
                 Log.i(TAG, "Sent JSON update intent.")
@@ -136,9 +139,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val groupName = getStringOrNull(message, Jk.GROUP_NAME.text)
         val groupId = getStringOrNull(message, Jk.GROUP_ID.text)
         val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
+        val serverSymKey = getStringOrNull(message, Jk.SERVER_SYMMETRIC_KEY.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, serverSymKey)
     }
 
     /**
@@ -180,8 +184,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             val groupName = getStringOrNull(response, Jk.GROUP_NAME.text)
             val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
             val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
+            val serverSymKey = getStringOrNull(response, Jk.SERVER_SYMMETRIC_KEY.text)
             val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
-                groupName, groupId, members) ?: return
+                groupName, groupId, members, serverSymKey) ?: return
 
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
@@ -209,11 +214,17 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?): String? {
+    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?, serverKey: String?): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
             return null
         }
+
+        if (serverKey == null) {
+            Log.w(TAG, "Attempted to register group but no symmetric server key was specified. Will ignore request.")
+            return null
+        }
+        val serverKeyAsSecretKey = EncryptionManager.stringToKeyAESGCM(serverKey)
 
         if (members == null) {
             Log.w(TAG, "Attempted to register group but no members were specified. Will ignore request.")
@@ -245,7 +256,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
 
         // TODO: Apply check to see if group name exists, in which case add (1) to the end.
-        GroupManager.registerGroup(usedGroupName, groupId, memberEmails)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, serverKey=serverKeyAsSecretKey)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
 
         return usedGroupName

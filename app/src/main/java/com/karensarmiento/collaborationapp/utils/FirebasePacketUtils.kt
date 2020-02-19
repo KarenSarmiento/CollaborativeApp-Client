@@ -37,6 +37,7 @@ enum class JsonKeyword(val text: String) {
     ADDED_TO_GROUP("added_to_group"),
     GROUP_NAME("group_name"),
     MEMBERS("members"),
+    SERVER_SYMMETRIC_KEY("server_symmetric_key"),
 
     // Peer messaging.
     FORWARD_TO_PEER("forward_to_peer"),

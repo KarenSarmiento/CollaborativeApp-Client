@@ -68,18 +68,22 @@ object FirebaseMessageSendingService {
     }
 
     private fun sendJsonUpdateToDeviceGroup(groupName: String, jsonUpdate: String) {
+        // Encrypt JSON update.
+        val groupKey = GroupManager.getGroupKey(groupName) ?: return
+        val encryptedJsonUpdate = EncryptionManager.encryptAESGCM(jsonUpdate, groupKey)
+
         // Create request.
         val groupToken = GroupManager.groupId(groupName) ?: return
         val request = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_MESSAGE.text)
             .add(Jk.FORWARD_TOKEN_ID.text, groupToken)
-            .add(Jk.JSON_UPDATE.text, jsonUpdate)
+            .add(Jk.JSON_UPDATE.text, encryptedJsonUpdate)
             .build().toString()
 
         // Send request to server.
         val messageId = Utils.getUniqueId()
         sendEncryptedServerRequest(request, messageId)
-        Log.i(TAG, "Sent message to device group: $messageId")
+        Log.i(TAG, "Sent json update to device group: $messageId")
     }
 
     fun sendCreateGroupRequest(groupName: String, peerEmail: String) {
