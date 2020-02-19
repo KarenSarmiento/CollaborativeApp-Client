@@ -73,14 +73,6 @@ class MainActivity : AppCompatActivity() {
         button_recover_state.setOnClickListener {
             recoverLocalStateFromFile()
         }
-
-        button_send_self_message.setOnClickListener {
-            FirebaseSending.sendJsonUpdateToCurrentDeviceGroup("{}")
-        }
-
-        button_send_server_message.setOnClickListener {
-            FirebaseSending.sendRegisterPublicKeyRequest("test-public-key")
-        }
     }
 
     fun onCheckboxClicked(view: View) {
