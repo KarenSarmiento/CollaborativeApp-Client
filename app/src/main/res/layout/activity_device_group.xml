@@ -8,59 +8,12 @@
     android:padding="8dp"
     tools:context=".grouping.DeviceGroupActivity">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/create_group_instruction" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/group_name_hint">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/group_name_text_field"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/text_peer_email" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/hint_peer_email">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/text_field_peer_email"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <Button
-            android:id="@+id/button_create_group"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/button_create_group" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/text_join_existing_group" />
-
-        <RadioGroup
-            android:id="@+id/radio_group_list"
+        <LinearLayout
+            android:id="@+id/layout_todo_lists"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-        </RadioGroup>
 
-        <Button
-            android:id="@+id/button_existing_group"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:enabled="false"
-            android:text="@string/button_existing_group" />
+        </LinearLayout>
 
 </LinearLayout>

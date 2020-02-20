@@ -19,4 +19,6 @@
     <string name="button_existing_group">Edit on Existing Group</string>
     <string name="error_join_group_with_none_selected">Please select an existing group or create a new one.</string>
     <string name="error_join_unregistered_group">Group is not registered. Please select another group.</string>
+    <string name="empty_name">NO NAME</string>
+    <string name="hint_new_group">New Group Name</string>
 </resources>

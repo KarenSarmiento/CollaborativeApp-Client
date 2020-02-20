@@ -86,11 +86,13 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent message to device group: $messageId")
     }
 
-    fun sendCreateGroupRequest(groupName: String, peerEmail: String) {
+    fun sendCreateGroupRequest(groupName: String, peerEmails: Set<String>) {
         // Create request.
         val groupId = Utils.getUniqueId()
         val memberEmails = JSONArray()
-        memberEmails.put(peerEmail)
+        for (peerEmail in peerEmails) {
+            memberEmails.put(peerEmail)
+        }
         val request = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.CREATE_GROUP.text)
             .add(Jk.GROUP_NAME.text, groupName)

@@ -6,11 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.RadioButton
+import android.util.Log
+import android.widget.*
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.android.synthetic.main.activity_device_group.*
 import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
@@ -35,58 +34,8 @@ class DeviceGroupActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_group)
 
-        setUpButtonListeners()
-        setUpRadioButtons()
         registerAddedToGroupListener()
-    }
-
-    private fun setUpRadioButtons() {
-        val allGroups = GroupManager.getAllRegisteredGroups()
-        for (group in allGroups) {
-            addNewRadioButton(group)
-        }
-    }
-
-    private fun setUpButtonListeners() {
-        button_create_group.setOnClickListener {
-            // TODO: Validate that the group name is unique.
-            val groupName = group_name_text_field.text.toString()
-            val peerEmail = text_field_peer_email.text.toString()
-            Firebase.sendCreateGroupRequest(groupName, peerEmail)
-            // TODO: Buffer all group packets until we have received a successful group creation response.
-//            startActivity(MainActivity.getLaunchIntent(this))
-        }
-
-        radio_group_list.setOnCheckedChangeListener { _, _ ->
-            button_existing_group.isEnabled = true
-        }
-
-        button_existing_group.setOnClickListener {
-            val groupName = getSelectedRadioButtonText()
-            if (groupName == null) {
-                Utils.hideKeyboard(this)
-                Snackbar.make(
-                    findViewById(R.id.radio_group_list),
-                    R.string.error_join_group_with_none_selected,
-                    Snackbar.LENGTH_SHORT
-                ).show()
-            } else {
-                // TODO: Load data corresponding with existing group and update ui for messages
-                // related only to this group.
-                val result = maybeSetCurrentGroup(groupName)
-                if (result) {
-                    GroupManager.currentGroup = groupName
-                    startActivity(MainActivity.getLaunchIntent(this))
-                } else {
-                    Utils.hideKeyboard(this)
-                    Snackbar.make(
-                        findViewById(R.id.radio_group_list),
-                        R.string.error_join_unregistered_group,
-                        Snackbar.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        populateTodoLists()
     }
 
     private fun registerAddedToGroupListener() {
@@ -94,7 +43,7 @@ class DeviceGroupActivity : AppCompatActivity() {
             override fun onReceive(context: Context, intent: Intent) {
                 val groupName = intent.getStringExtra(Jk.VALUE.text)
                 groupName?.let {
-                    addNewRadioButton(groupName)
+                    insertTodoListSelector(groupName)
                 }
             }
         }
@@ -102,22 +51,51 @@ class DeviceGroupActivity : AppCompatActivity() {
         registerReceiver(addedToGroupListener, intentFilter)
     }
 
-    private fun addNewRadioButton(buttonText: String) {
-        val radioButton = RadioButton(this)
-        radioButton.layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT)
-        radioButton.text = buttonText
-        radio_group_list.addView(radioButton)
+    private fun populateTodoLists() {
+        insertNewTodoListOption()
+        for (groupName in GroupManager.getAllRegisteredGroups()) {
+            insertTodoListSelector(groupName)
+        }
     }
 
-    private fun getSelectedRadioButtonText(): String? {
-        if (radio_group_list.checkedRadioButtonId != -1) {
-            return (findViewById<View>(radio_group_list.checkedRadioButtonId) as RadioButton)
-                .text.toString()
+    private fun insertTodoListSelector(groupName: String) {
+        // Create view.
+        val view = layoutInflater.inflate(R.layout.todo_list_selector, layout_todo_lists, false)
+        val text = view.findViewById<TextView>(R.id.text)
+        text.text = groupName
+
+        // Set as current group and go to main activity.v
+        view.setOnClickListener {
+            Log.i(TAG, "Switching to group $groupName")
+            val result = maybeSetCurrentGroup(groupName)
+            if (result) {
+                GroupManager.currentGroup = groupName
+                // TODO: Restore state for this group.
+                startActivity(MainActivity.getLaunchIntent(this))
+            } else {
+                Utils.hideKeyboard(this)
+                Snackbar.make(
+                    findViewById(R.id.layout_todo_lists),
+                    R.string.error_join_unregistered_group,
+                    Snackbar.LENGTH_SHORT
+                ).show()
+            }
         }
-        return null
+        layout_todo_lists.addView(view)
     }
+
+    private fun insertNewTodoListOption() {
+        val view = layoutInflater.inflate(R.layout.new_todo_list, layout_todo_lists, false)
+        layout_todo_lists.addView(view, 0)
+
+        val addButton = view.findViewById<ImageButton>(R.id.add_button)
+        addButton.setOnClickListener {
+            // TODO: Validate that the group name is unique.
+            val groupName =  view.findViewById<TextInputEditText>(R.id.text_field_new_group).text.toString()
+            Firebase.sendCreateGroupRequest(groupName, setOf())
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(addedToGroupListener)
