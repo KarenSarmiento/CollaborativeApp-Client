@@ -153,7 +153,27 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         when(downstreamType) {
             Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(response)
             Jk.CREATE_GROUP_RESPONSE.text -> handleCreateGroupResponse(response)
+            Jk.ADDED_PEER_TO_GROUP_RESPONSE.text -> handleAddedPeerToGroupResponse(response)
             else -> Log.w(TAG, "Downstream type $downstreamType not yet supported.")
+        }
+    }
+
+    private fun handleAddedPeerToGroupResponse(response: JsonObject) {
+        val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
+        if (success) {
+            Log.i(TAG, "Handling successful added to peer response.")
+            val groupName = getStringOrNull(response, Jk.GROUP_NAME.text) ?: return
+            val groupId = getStringOrNull(response, Jk.GROUP_ID.text) ?: return
+            val peerEmail = getStringOrNull(response, Jk.PEER_EMAIL.text) ?: return
+            val peerToken = getStringOrNull(response, Jk.PEER_TOKEN.text) ?: return
+            val peerPublicKey = getStringOrNull(response, Jk.PEER_PUBLIC_KEY.text) ?: return
+
+            AddressBook.addContact(peerEmail, peerToken, peerPublicKey)
+            GroupManager.addToGroup(groupName, peerEmail)
+            val groupKey = GroupManager.getGroupKey(groupName) ?: return
+            FirebaseMessageSendingService.sendSymmetricKeyToPeer(
+                peerEmail, groupId, EncryptionManager.keyAsString(groupKey))
+            broadcastIntent(Jk.ADDED_PEER_TO_GROUP_RESPONSE.text, groupName)
         }
     }
 

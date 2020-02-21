@@ -15,6 +15,7 @@ object GroupManager {
      */
     private val groups: MutableMap<String, GroupData> = mutableMapOf()
 
+    // Group name of current group.
     var currentGroup: String? = null
         get() = field
 
@@ -64,7 +65,7 @@ object GroupManager {
 
     fun getMembers(groupName: String): Set<String>? {
         if (!groups.containsKey(groupName)) {
-            Log.e(TAG, "Cannot get members group group $groupName since this group does not exist.")
+            Log.e(TAG, "Cannot get members for group $groupName since this group does not exist.")
             return null
         }
         return groups[groupName]?.members as Set<String>
@@ -78,6 +79,14 @@ object GroupManager {
         }
         Log.i(TAG, "No group name was found for group id $groupId")
         return null
+    }
+
+    fun addToGroup(groupName: String, peerEmail: String) {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot add to group $groupName since this group does not exist.")
+            return
+        }
+        groups[groupName]!!.members.add(peerEmail)
     }
 }
 

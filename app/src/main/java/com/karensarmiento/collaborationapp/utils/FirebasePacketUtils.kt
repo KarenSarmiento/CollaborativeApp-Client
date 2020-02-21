@@ -38,6 +38,12 @@ enum class JsonKeyword(val text: String) {
     GROUP_NAME("group_name"),
     MEMBERS("members"),
 
+    // Managing group.
+    ADD_PEER_TO_GROUP("add_peer_to_group"),
+    ADDED_PEER_TO_GROUP_RESPONSE("added_peer_to_group_response"),
+    PEER_TOKEN("peer_token"),
+    PEER_PUBLIC_KEY("peer_public_key"),
+
     // Peer messaging.
     FORWARD_TO_PEER("forward_to_peer"),
     PEER_TYPE("peer_type"),

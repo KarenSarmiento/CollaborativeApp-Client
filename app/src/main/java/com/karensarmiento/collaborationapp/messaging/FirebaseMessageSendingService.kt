@@ -109,6 +109,24 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent create group request to server: $messageId")
     }
 
+    fun sendAddPeerToGroupRequest(groupName: String, groupId: String, peerEmail: String) {
+        // Create request.
+        val request = Json.createObjectBuilder()
+            .add(Jk.UPSTREAM_TYPE.text, Jk.ADD_PEER_TO_GROUP.text)
+            .add(Jk.GROUP_NAME.text, groupName)
+            .add(Jk.GROUP_ID.text, groupId)
+            .add(Jk.PEER_EMAIL.text, peerEmail)
+            .build().toString()
+
+        // Register this request as one that is awaiting a response.
+        val messageId = Utils.getUniqueId()
+        MessageBuffer.registerWaitingRequest(messageId)
+
+        // Send request to server.
+        sendEncryptedServerRequest(request, messageId)
+        Log.i(TAG, "Sent add peer to group request to server: $messageId")
+    }
+
     private fun sendEncryptedServerRequest(request: String, messageId: String) {
         // Encrypt request.
         val aesKey = EncryptionManager.generateKeyAESGCM()

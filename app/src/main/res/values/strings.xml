@@ -21,4 +21,6 @@
     <string name="error_join_unregistered_group">Group is not registered. Please select another group.</string>
     <string name="empty_name">NO NAME</string>
     <string name="hint_new_group">New Group Name</string>
+    <string name="text_no_friends">This list hasn\'t been shared with anyone yet.</string>
+    <string name="button_done">Done</string>
 </resources>
