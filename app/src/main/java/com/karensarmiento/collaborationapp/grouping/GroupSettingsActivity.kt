@@ -56,7 +56,7 @@ class GroupSettingsActivity : AppCompatActivity() {
                 }
             }
         }
-        val intentFilter = IntentFilter(JsonKeyword.ADDED_PEER_TO_GROUP_RESPONSE.text)
+        val intentFilter = IntentFilter(JsonKeyword.ADD_PEER_TO_GROUP.text)
         registerReceiver(peerAddedToGroupListener, intentFilter)
     }
 

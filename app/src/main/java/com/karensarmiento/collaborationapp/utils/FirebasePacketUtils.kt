@@ -40,7 +40,8 @@ enum class JsonKeyword(val text: String) {
 
     // Managing group.
     ADD_PEER_TO_GROUP("add_peer_to_group"),
-    ADDED_PEER_TO_GROUP_RESPONSE("added_peer_to_group_response"),
+    ADD_PEER_TO_GROUP_RESPONSE("add_peer_to_group_response"),
+    ADDED_PEER_TO_GROUP("added_peer_to_group"),
     PEER_TOKEN("peer_token"),
     PEER_PUBLIC_KEY("peer_public_key"),
 

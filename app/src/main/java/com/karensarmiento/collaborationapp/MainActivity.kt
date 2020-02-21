@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         setUpButtonListeners()
         setUpLocalFileState()
         registerJsonUpdateListener()
-        // TODO: Get current group and restore all todos.
+        // TODO: Get current group and restore all to-dos.
     }
 
     // Adds share icon.
