@@ -19,6 +19,9 @@ import com.karensarmiento.collaborationapp.grouping.GroupManager
 import kotlinx.android.synthetic.main.todo_entry_box.view.*
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
+import android.view.Menu
+import android.view.MenuItem
+import com.karensarmiento.collaborationapp.grouping.GroupSettingsActivity
 
 
 class MainActivity : AppCompatActivity() {
@@ -47,6 +50,23 @@ class MainActivity : AppCompatActivity() {
         setUpButtonListeners()
         setUpLocalFileState()
         registerJsonUpdateListener()
+    }
+
+    // Adds share icon.
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_items, menu)
+        return true
+    }
+
+    // Set up listener to menu item click.
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.share_page -> {
+                startActivity(GroupSettingsActivity.getLaunchIntent(this))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun setUpTitleBar() {
