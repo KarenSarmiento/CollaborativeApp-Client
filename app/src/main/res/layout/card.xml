@@ -15,12 +15,28 @@
         android:layout_height="48dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardElevation="2dp"
-        app:cardUseCompatPadding="true"        >
+        app:cardUseCompatPadding="true">
 
-        <CheckBox android:id="@+id/checkbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onCheckboxClicked"/>
+        <RelativeLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:padding="10dp">
+
+            <CheckBox android:id="@+id/checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:onClick="onCheckboxClicked"/>
+
+            <ImageButton
+                android:id="@+id/button_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:src="@android:drawable/ic_input_delete" />
+
+        </RelativeLayout>
 
     </com.google.android.material.card.MaterialCardView>
 

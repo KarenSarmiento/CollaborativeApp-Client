@@ -33,9 +33,16 @@ class DeviceGroupActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_group)
+        setUpTitleBar()
 
         registerAddedToGroupListener()
         populateTodoLists()
+    }
+
+    private fun setUpTitleBar() {
+        val headerText = "My Tasks"
+        actionBar?.title = headerText
+        supportActionBar?.title = headerText
     }
 
     private fun registerAddedToGroupListener() {

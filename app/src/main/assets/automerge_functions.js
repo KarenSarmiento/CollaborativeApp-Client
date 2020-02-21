@@ -22,7 +22,7 @@ let applyJsonUpdate = function(jsonUpdate) {
             addCard(jsonUpdate.update.label, false)
             break;
         case updateTypes.REMOVE_TODO:
-            removeCard()
+            removeCard(jsonUpdate.update.index)
             break;
         case updateTypes.UPDATE_COMPLETED:
             setCardCompleted(jsonUpdate.update.index, jsonUpdate.update.completed)
@@ -52,12 +52,12 @@ let addCard = function (title, completed) {
     return updateMessage
 }
 
-let removeCard = function () {
+let removeCard = function (index) {
     eventName = "automerge_removeCard"
     ktchannel.startEvent(eventName)
 
     doc = Automerge.change(doc, 'Delete card', it => {
-      delete it.cards[0]
+      delete it.cards[index]
     })
     log("> " + JSON.stringify(doc.cards))
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
@@ -66,7 +66,9 @@ let removeCard = function () {
 
     updateMessage = {
         "updateType" : "removeTodo",
-        "update" : {}
+        "update" : {
+            "index" : index
+        }
     }
     return updateMessage
 }

@@ -49,8 +49,8 @@ internal class Automerge(
             callback?.invoke(it)
         }
 
-    fun removeCard(callback: ((String) -> Unit)? = null) =
-        webview.evaluateJavascript("javascript:removeCard();") {
+    fun removeCard(index: Int, callback: ((String) -> Unit)? = null) =
+        webview.evaluateJavascript("javascript:removeCard(\"${index}\");") {
             callback?.invoke(it)
         }
 

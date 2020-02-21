@@ -14,6 +14,9 @@ import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.widget.ImageButton
+import com.karensarmiento.collaborationapp.grouping.GroupManager
+import kotlinx.android.synthetic.main.todo_entry_box.view.*
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 
@@ -37,12 +40,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appContext = applicationContext
-
         setContentView(R.layout.activity_main)
+        setUpTitleBar()
+
         setUpAutomerge()
         setUpButtonListeners()
         setUpLocalFileState()
         registerJsonUpdateListener()
+    }
+
+    private fun setUpTitleBar() {
+        val headerText = GroupManager.currentGroup
+        actionBar?.title = headerText
+        supportActionBar?.title = headerText
     }
 
     private fun setUpAutomerge(){
@@ -54,30 +64,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpButtonListeners() {
-        button_add_card.setOnClickListener {
-            automerge?.addCard(Card(text_field.text.toString(), false)) {
-                // TODO: Update json in onMessageReceive, not here.
+        todo_entry_box.button_add_todo.setOnClickListener {
+            val todoText = todo_entry_box.text_entry.text.toString()
+            automerge?.addCard(Card(todoText, false)) {
                 appendJsonToLocalHistory(it)
                 FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
             }
-            text_field.setText("")
-        }
-
-        button_remove_card.setOnClickListener {
-            automerge?.removeCard {
-                appendJsonToLocalHistory(it)
-                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
-            }
-        }
-
-        button_recover_state.setOnClickListener {
-            recoverLocalStateFromFile()
+            todo_entry_box.text_entry.setText("")
         }
     }
 
     fun onCheckboxClicked(view: View) {
         if (view is CheckBox) {
-            val index = layout_cards.indexOfChild(((view.getParent() as ViewGroup).parent as ViewGroup))
+            val index = layout_todos.indexOfChild(view.parent.parent.parent as ViewGroup)
             automerge?.setCardCompleted(index, view.isChecked) {
                 appendJsonToLocalHistory(it)
                 FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
@@ -119,15 +118,29 @@ class MainActivity : AppCompatActivity() {
 
     // TODO: Recreating cards is inefficient. Use RecyclerView with a proper adapter instead.
     private fun updateCards(cards: List<Card>) {
-        layout_cards.removeAllViewsInLayout()
+        layout_todos.removeAllViewsInLayout()
         cards.forEach { card ->
-            val view = layoutInflater.inflate(R.layout.card, layout_cards, false)
+            val view = layoutInflater.inflate(R.layout.card, layout_todos, false)
+
+            // Set text and checkbox.
             val item = view.findViewById<CheckBox>(R.id.checkbox)
             if (item is CheckBox) {
                 item.text = card.title
                 item.isChecked = card.completed
             }
-            layout_cards.addView(view)
+
+            // Set delete button listener.
+            val deleteButton = view.findViewById<ImageButton>(R.id.button_delete)
+            deleteButton.setOnClickListener {
+                val index = layout_todos.indexOfChild(view as ViewGroup)
+                automerge?.removeCard(index) {
+                appendJsonToLocalHistory(it)
+                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
+                }
+            }
+
+            // Display card in UI.
+            layout_todos.addView(view)
         }
     }
 
