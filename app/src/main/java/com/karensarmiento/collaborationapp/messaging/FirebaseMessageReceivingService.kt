@@ -91,6 +91,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         // Decrypt message using private key.
         val peerMessage = getStringOrNull(message, Jk.PEER_MESSAGE.text) ?: return
         val decryptedMessage = EncryptionManager.decryptWithOwnPrivateKey(peerMessage)
+        if (decryptedMessage == null) {
+            Log.i(TAG, "Could not decrypt message with own key. Will ignore it.")
+            return
+        }
         val decryptedJson = jsonStringToJsonObject(decryptedMessage)
 
         // Handle the message

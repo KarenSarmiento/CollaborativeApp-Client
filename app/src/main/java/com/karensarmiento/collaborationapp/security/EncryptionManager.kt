@@ -11,6 +11,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.nio.ByteBuffer
+import javax.crypto.BadPaddingException
 import javax.crypto.spec.SecretKeySpec
 
 
@@ -106,15 +107,21 @@ object EncryptionManager {
         try {
             val key = stringToPublicKeyRSA(publicKey)
             encryptedString = encryptFromKeyRSA(plaintext, key)
-        } catch (e: Exception) {
+        } catch (e: BadPaddingException) {
             e.printStackTrace()
         }
 
         return encryptedString?.replace("(\\r|\\n)".toRegex(), "")
     }
 
-    fun decryptWithOwnPrivateKey(ciphertext: String): String {
-        return decryptFromKeyRSA(ciphertext, personalKeys.private)
+    fun decryptWithOwnPrivateKey(ciphertext: String): String? {
+        var decryptedString: String? = null
+        try {
+            decryptedString = decryptFromKeyRSA(ciphertext, personalKeys.private)
+        } catch (e: BadPaddingException) {
+            e.printStackTrace()
+        }
+        return decryptedString
     }
 
     fun maybeDecryptRSA(ciphertext: String, privateKey: String): String? {
@@ -122,7 +129,7 @@ object EncryptionManager {
         try {
             val key = stringToPrivateKeyRSA(privateKey)
             decryptedString = decryptFromKeyRSA(ciphertext, key)
-        } catch (e: Exception) {
+        } catch (e: BadPaddingException) {
             e.printStackTrace()
         }
 
@@ -135,7 +142,7 @@ object EncryptionManager {
             val kpg = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
             kpg.initialize(RSA_KEY_SIZE)
             kp = kpg.generateKeyPair()
-        } catch (e: Exception) {
+        } catch (e: BadPaddingException) {
             e.printStackTrace()
         }
         return kp
