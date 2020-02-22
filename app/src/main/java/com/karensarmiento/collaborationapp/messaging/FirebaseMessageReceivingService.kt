@@ -337,7 +337,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         Log.d(TAG, "Refreshed token: $token")
     }
 
-
     private fun broadcastIntent(action: String, value: String) {
         val updateIntent = Intent()
         updateIntent.action = action
