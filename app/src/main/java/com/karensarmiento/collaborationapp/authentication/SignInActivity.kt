@@ -16,7 +16,7 @@ import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.DeviceGroupActivity
 import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
-import com.karensarmiento.collaborationapp.utils.Utils
+import com.karensarmiento.collaborationapp.utils.AccountUtils
 import kotlinx.android.synthetic.main.activity_sign_in.*
 
 class SignInActivity : AppCompatActivity() {
@@ -71,7 +71,7 @@ class SignInActivity : AppCompatActivity() {
                         .show()
                 }
                 else {
-                    Utils.setGoogleSignInAccount(account)
+                    AccountUtils.setGoogleSignInAccount(account)
                     firebaseAuthWithGoogle(account)
                 }
             }

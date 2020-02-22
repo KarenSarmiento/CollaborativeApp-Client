@@ -83,10 +83,22 @@ object GroupManager {
 
     fun addToGroup(groupName: String, peerEmail: String) {
         if (!groups.containsKey(groupName)) {
-            Log.e(TAG, "Cannot add to group $groupName since this group does not exist.")
+            Log.e(TAG, "Cannot add $peerEmail to group $groupName since this group does not exist.")
             return
         }
         groups[groupName]!!.members.add(peerEmail)
+    }
+
+    fun leaveGroup(groupName: String) {
+        groups.remove(groupName)
+    }
+
+    fun removePeerFromGroup(groupName: String, peerEmail: String) {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot remove $peerEmail from group $groupName since this group does not exist.")
+            return
+        }
+        groups[groupName]!!.members.remove(peerEmail)
     }
 }
 

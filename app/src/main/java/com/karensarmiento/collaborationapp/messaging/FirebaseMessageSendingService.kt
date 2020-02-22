@@ -4,7 +4,7 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
 import com.karensarmiento.collaborationapp.security.AddressBook
-import com.karensarmiento.collaborationapp.utils.Utils
+import com.karensarmiento.collaborationapp.utils.AccountUtils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
@@ -39,7 +39,7 @@ object FirebaseMessageSendingService {
             .build().toString()
 
         // Send request to server.
-        val messageId = Utils.getUniqueId()
+        val messageId = AccountUtils.getUniqueId()
         sendEncryptedServerRequest(request, messageId)
         Log.i(TAG, "Sent register public key request to server: $messageId")
     }
@@ -48,12 +48,12 @@ object FirebaseMessageSendingService {
         // Create request.
         val request = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.REGISTER_PUBLIC_KEY.text)
-            .add(Jk.EMAIL.text, Utils.getGoogleEmail())
+            .add(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
             .add(Jk.PUBLIC_KEY.text, publicKey)
             .build().toString()
 
         // Send request to server.
-        val messageId = Utils.getUniqueId()
+        val messageId = AccountUtils.getUniqueId()
         sendEncryptedServerRequest(request, messageId)
         Log.i(TAG, "Sent register public key request to server: $messageId")
     }
@@ -81,14 +81,14 @@ object FirebaseMessageSendingService {
             .build().toString()
 
         // Send request to server.
-        val messageId = Utils.getUniqueId()
+        val messageId = AccountUtils.getUniqueId()
         sendEncryptedServerRequest(request, messageId)
         Log.i(TAG, "Sent message to device group: $messageId")
     }
 
     fun sendCreateGroupRequest(groupName: String, peerEmails: Set<String>) {
         // Create request.
-        val groupId = Utils.getUniqueId()
+        val groupId = AccountUtils.getUniqueId()
         val memberEmails = JSONArray()
         for (peerEmail in peerEmails) {
             memberEmails.put(peerEmail)
@@ -101,7 +101,7 @@ object FirebaseMessageSendingService {
             .build().toString()
 
         // Register this request as one that is awaiting a response.
-        val messageId = Utils.getUniqueId()
+        val messageId = AccountUtils.getUniqueId()
         MessageBuffer.registerWaitingRequest(messageId)
 
         // Send request to server.
@@ -119,12 +119,29 @@ object FirebaseMessageSendingService {
             .build().toString()
 
         // Register this request as one that is awaiting a response.
-        val messageId = Utils.getUniqueId()
+        val messageId = AccountUtils.getUniqueId()
         MessageBuffer.registerWaitingRequest(messageId)
 
         // Send request to server.
         sendEncryptedServerRequest(request, messageId)
         Log.i(TAG, "Sent add peer to group request to server: $messageId")
+    }
+
+    fun sendRemovePeerFromGroupRequest(groupName: String, groupId: String, peerEmail: String?) {
+        val request = Json.createObjectBuilder()
+            .add(Jk.UPSTREAM_TYPE.text, Jk.REMOVE_PEER_FROM_GROUP.text)
+            .add(Jk.GROUP_NAME.text, groupName)
+            .add(Jk.GROUP_ID.text, groupId)
+            .add(Jk.PEER_EMAIL.text, peerEmail)
+            .build().toString()
+
+        // Register this request as one that is awaiting a response.
+        val messageId = AccountUtils.getUniqueId()
+        MessageBuffer.registerWaitingRequest(messageId)
+
+        // Send request to server.
+        sendEncryptedServerRequest(request, messageId)
+        Log.i(TAG, "Sent remove peer from group request to server: $messageId")
     }
 
     private fun sendEncryptedServerRequest(request: String, messageId: String) {
@@ -140,13 +157,13 @@ object FirebaseMessageSendingService {
 
         // Send encrypted request.
         FirebaseMessaging.getInstance().send(
-            RemoteMessage.Builder("${Utils.SENDER_ID}@fcm.googleapis.com")
+            RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
                 .setMessageId(messageId)
                 .setTtl(TTL)
                 .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
                 .addData(Jk.ENC_KEY.text, encryptedKey)
                 //TODO: Change identifier to from email something non public e.g. random gen string associated with email.
-                .addData(Jk.EMAIL.text, Utils.getGoogleEmail())
+                .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
                 .build())
     }
 }

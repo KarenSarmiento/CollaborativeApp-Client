@@ -23,7 +23,13 @@
         android:visibility="visible"/>
 
     <Button
-        android:id="@+id/button_done"
+        android:id="@+id/button_leave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_leave" />
+
+    <Button
+        android:id="@+id/button_back"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/button_back" />

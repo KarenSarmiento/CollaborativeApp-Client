@@ -3,7 +3,6 @@ package com.karensarmiento.collaborationapp.grouping
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -14,14 +13,15 @@ import kotlinx.android.synthetic.main.activity_device_group.*
 import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.GroupManager.maybeSetCurrentGroup
+import com.karensarmiento.collaborationapp.utils.AndroidUtils
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
-import com.karensarmiento.collaborationapp.utils.Utils
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 
 
 class DeviceGroupActivity : AppCompatActivity() {
 
     private lateinit var addedToGroupListener: BroadcastReceiver
+    private lateinit var removedFromGroupListener: BroadcastReceiver
 
     companion object {
         private const val TAG = "DeviceGroupActivity"
@@ -35,8 +35,8 @@ class DeviceGroupActivity : AppCompatActivity() {
         setContentView(R.layout.activity_device_group)
         setUpTitleBar()
 
-        registerAddedToGroupListener()
-        populateTodoLists()
+        registerGroupMembershipListeners()
+        refreshListOfTodoLists()
     }
 
     private fun setUpTitleBar() {
@@ -45,20 +45,16 @@ class DeviceGroupActivity : AppCompatActivity() {
         supportActionBar?.title = headerText
     }
 
-    private fun registerAddedToGroupListener() {
-        addedToGroupListener = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val groupName = intent.getStringExtra(Jk.VALUE.text)
-                groupName?.let {
-                    insertTodoListSelector(groupName)
-                }
-            }
-        }
-        val intentFilter = IntentFilter(Jk.ADDED_TO_GROUP.text)
-        registerReceiver(addedToGroupListener, intentFilter)
+    private fun registerGroupMembershipListeners() {
+        addedToGroupListener = AndroidUtils.createSimpleBroadcastReceiver(
+            this, Jk.ADDED_TO_GROUP.text) { insertTodoListSelector(it) }
+
+        removedFromGroupListener = AndroidUtils.createSimpleBroadcastReceiver(
+            this, Jk.REMOVED_FROM_GROUP.text) { refreshListOfTodoLists() }
     }
 
-    private fun populateTodoLists() {
+    private fun refreshListOfTodoLists() {
+        layout_todo_lists.removeAllViewsInLayout()
         insertNewTodoListOption()
         for (groupName in GroupManager.getAllRegisteredGroups()) {
             insertTodoListSelector(groupName)
@@ -80,7 +76,7 @@ class DeviceGroupActivity : AppCompatActivity() {
                 // TODO: Restore state for this group.
                 startActivity(MainActivity.getLaunchIntent(this))
             } else {
-                Utils.hideKeyboard(this)
+                AndroidUtils.hideKeyboard(this)
                 Snackbar.make(
                     findViewById(R.id.layout_todo_lists),
                     R.string.error_join_unregistered_group,
@@ -106,5 +102,6 @@ class DeviceGroupActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(addedToGroupListener)
+        unregisterReceiver(removedFromGroupListener)
     }
 }

@@ -46,10 +46,29 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage)
                 Jk.ADDED_PEER_TO_GROUP.text -> handleAddedPeerToGroupMessage(decryptedMessage)
+                Jk.REMOVED_PEER_FROM_GROUP.text -> handleRemovedPeerFromGroup(decryptedMessage)
                 Jk.FORWARD_TO_PEER.text -> handleForwardToPeerMessage(decryptedMessage)
                 Jk.FORWARD_TO_GROUP.text-> handleJsonUpdateMessage(decryptedMessage)
                 else -> handleResponseMessage(downstreamType, decryptedMessage)
             }
+        }
+    }
+
+    private fun handleRemovedPeerFromGroup(message: JsonObject) {
+        Log.i(TAG, "Handling removed peer message.")
+        val groupName = getStringOrNull(message, Jk.GROUP_NAME.text) ?: return
+//            val groupId = getStringOrNull(response, Jk.GROUP_ID.text) ?: return
+        val peerEmail = getStringOrNull(message, Jk.PEER_EMAIL.text) ?: return
+
+        if (peerEmail == AccountUtils.getGoogleEmail()) {
+            Log.i(TAG, "Leaving group $groupName.")
+            GroupManager.leaveGroup(groupName)
+            broadcastIntent(Jk.REMOVED_FROM_GROUP.text, groupName)
+        } else {
+            // Remove peer
+            Log.i(TAG, "Removing peer $peerEmail from group $groupName.")
+            GroupManager.removePeerFromGroup(groupName, peerEmail)
+            broadcastIntent(Jk.REMOVED_PEER_FROM_GROUP.text, groupName)
         }
     }
 
@@ -166,12 +185,13 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         when(downstreamType) {
             Jk.GET_NOTIFICATION_KEY_RESPONSE.text -> handleNotificationKeyResponse(response)
             Jk.CREATE_GROUP_RESPONSE.text -> handleCreateGroupResponse(response)
-            Jk.ADD_PEER_TO_GROUP_RESPONSE.text -> handleAddedPeerToGroupResponse(response)
+            Jk.ADD_PEER_TO_GROUP_RESPONSE.text -> handleAddPeerToGroupResponse(response)
+            Jk.REMOVE_PEER_FROM_GROUP_RESPONSE.text -> handleRemovePeerFromGroupResponse(response)
             else -> Log.w(TAG, "Downstream type $downstreamType not yet supported.")
         }
     }
 
-    private fun handleAddedPeerToGroupResponse(response: JsonObject) {
+    private fun handleAddPeerToGroupResponse(response: JsonObject) {
         val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
         if (success) {
             Log.i(TAG, "Handling successful added to peer response.")
@@ -187,7 +207,18 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             FirebaseMessageSendingService.sendSymmetricKeyToPeer(
                 peerEmail, groupId, EncryptionManager.keyAsString(groupKey))
             broadcastIntent(Jk.ADD_PEER_TO_GROUP.text, groupName)
+        } else {
+            Log.i(TAG, "Received unsuccessful add peer to group response.")
         }
+    }
+
+    private fun handleRemovePeerFromGroupResponse(response: JsonObject) {
+        Log.i(TAG, "Received remove peer from group response.")
+        val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
+        if (success)
+            handleRemovedPeerFromGroup(response)
+        else
+            Log.i(TAG, "Received unsuccessful remove peer from group response.")
     }
 
     /**
@@ -269,7 +300,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                         "$publicKey since one of these values are null. Will skip.")
                 continue
             }
-            if (email != Utils.getGoogleEmail()) {
+            if (email != AccountUtils.getGoogleEmail()) {
                 memberEmails.add(email)
                 AddressBook.addContact(email, token, publicKey)
             }

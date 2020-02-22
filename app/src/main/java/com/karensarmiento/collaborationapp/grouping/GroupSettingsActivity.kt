@@ -3,14 +3,15 @@ package com.karensarmiento.collaborationapp.grouping
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.R
-import com.karensarmiento.collaborationapp.utils.JsonKeyword
+import com.karensarmiento.collaborationapp.utils.AndroidUtils
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
+import com.karensarmiento.collaborationapp.utils.AccountUtils
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import kotlinx.android.synthetic.main.activity_group_settings.*
 import kotlinx.android.synthetic.main.add_friends_entry_box.view.*
@@ -19,6 +20,7 @@ import kotlinx.android.synthetic.main.add_friends_entry_box.view.*
 class GroupSettingsActivity : AppCompatActivity() {
 
     private lateinit var peerAddedToGroupListener: BroadcastReceiver
+    private lateinit var peerRemovedFromGroupListener: BroadcastReceiver
 
     companion object {
         private const val TAG = "GroupSettingsActivity"
@@ -34,11 +36,12 @@ class GroupSettingsActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_group_settings)
         setUpTitleBar()
-        displayListOfCurrentFriends()
+        refreshListOfCurrentFriends()
 
         supportAddingToGroup()
+        supportLeavingGroup()
         backToMainActivityOnDone()
-        registerAddedToGroupListener()
+        registerGroupMembershipListeners()
     }
 
     private fun setUpTitleBar() {
@@ -47,20 +50,21 @@ class GroupSettingsActivity : AppCompatActivity() {
         supportActionBar?.title = headerText
     }
 
-    private fun registerAddedToGroupListener() {
-        peerAddedToGroupListener = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val groupName = intent.getStringExtra(JsonKeyword.VALUE.text)
-                groupName?.let {
-                    displayListOfCurrentFriends()
-                }
-            }
+    private fun registerGroupMembershipListeners() {
+        peerAddedToGroupListener = AndroidUtils.createSimpleBroadcastReceiver(
+            this, Jk.ADD_PEER_TO_GROUP.text) {
+            if (it == GroupManager.currentGroup)
+                refreshListOfCurrentFriends()
         }
-        val intentFilter = IntentFilter(JsonKeyword.ADD_PEER_TO_GROUP.text)
-        registerReceiver(peerAddedToGroupListener, intentFilter)
+
+        peerRemovedFromGroupListener = AndroidUtils.createSimpleBroadcastReceiver(
+            this, Jk.REMOVED_PEER_FROM_GROUP.text) {
+            if (it == GroupManager.currentGroup)
+                refreshListOfCurrentFriends()
+        }
     }
 
-    private fun displayListOfCurrentFriends() {
+    private fun refreshListOfCurrentFriends() {
         layout_friends_list.removeAllViewsInLayout()
         val groupMembers = GroupManager.getMembers(currentGroup) ?: setOf()
         if (groupMembers.isEmpty()) {
@@ -91,8 +95,21 @@ class GroupSettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun supportLeavingGroup() {
+        button_leave.setOnClickListener {
+            val groupId = GroupManager.groupId(currentGroup)
+            if (groupId == null) {
+                Log.e(TAG, "Could not leave group because there was no group id for " +
+                        "group $currentGroup.")
+                return@setOnClickListener
+            }
+            Firebase.sendRemovePeerFromGroupRequest(currentGroup, groupId, AccountUtils.getGoogleEmail())
+            startActivity(DeviceGroupActivity.getLaunchIntent(this))
+        }
+    }
+
     private fun backToMainActivityOnDone() {
-        button_done.setOnClickListener {
+        button_back.setOnClickListener {
             startActivity(MainActivity.getLaunchIntent(this))
         }
     }
@@ -100,5 +117,6 @@ class GroupSettingsActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(peerAddedToGroupListener)
+        unregisterReceiver(peerRemovedFromGroupListener)
     }
 }

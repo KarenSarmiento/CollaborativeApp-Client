@@ -23,4 +23,5 @@
     <string name="hint_new_group">New Group Name</string>
     <string name="text_no_friends">This list hasn\'t been shared with anyone yet.</string>
     <string name="button_back">Back</string>
+    <string name="button_leave">Leave Group</string>
 </resources>
