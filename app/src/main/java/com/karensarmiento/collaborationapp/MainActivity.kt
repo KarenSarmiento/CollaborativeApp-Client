@@ -2,8 +2,6 @@ package com.karensarmiento.collaborationapp
 
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import com.karensarmiento.collaborationapp.collaboration.Automerge
@@ -14,14 +12,15 @@ import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.view.*
 import android.widget.ImageButton
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import kotlinx.android.synthetic.main.todo_entry_box.view.*
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
-import android.view.Menu
-import android.view.MenuItem
 import com.karensarmiento.collaborationapp.grouping.GroupSettingsActivity
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageReceivingService
+import com.karensarmiento.collaborationapp.utils.AndroidUtils
 
 
 class MainActivity : AppCompatActivity() {
@@ -51,6 +50,8 @@ class MainActivity : AppCompatActivity() {
         setUpLocalFileState()
         registerJsonUpdateListener()
         // TODO: Get current group and restore all to-dos.
+
+        Log.i(TAG, "GOT DOCUMENT: ${GroupManager.getDocument(GroupManager.currentGroup!!)}")
     }
 
     // Adds share icon.
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity() {
     private fun setUpAutomerge(){
         // The callback will by default be called by a BG thread; therefore we need to dispatch it
         // to the UI thread.
-        automerge = Automerge(webview) {
+        automerge = Automerge(AndroidUtils.webview!!) {
             runOnUiThread { updateCards(it) }
         }
     }

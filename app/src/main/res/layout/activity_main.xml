@@ -7,11 +7,11 @@
     android:padding="8dp"
     tools:context=".MainActivity">
 
-    <WebView
-        android:id="@+id/webview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="invisible"/>
+<!--    <WebView-->
+<!--        android:id="@+id/webview"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:visibility="invisible"/>-->
 
     <include
         layout="@layout/todo_entry_box"

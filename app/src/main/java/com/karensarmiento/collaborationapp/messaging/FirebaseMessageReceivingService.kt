@@ -4,6 +4,9 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
+import android.webkit.WebView
+import com.karensarmiento.collaborationapp.collaboration.Automerge
+import com.karensarmiento.collaborationapp.grouping.DocState
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -12,6 +15,14 @@ import javax.crypto.SecretKey
 import javax.json.JsonArray
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import javax.json.JsonObject
+import android.view.Gravity
+import android.content.Context
+import android.graphics.PixelFormat
+import android.view.WindowManager
+import android.webkit.WebResourceResponse
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceError
+import android.webkit.WebViewClient
 
 
 /**
@@ -22,7 +33,61 @@ import javax.json.JsonObject
 class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
     companion object {
+//        private lateinit var webview: WebView
+        private lateinit var automerge: Automerge
         private const val TAG = "FirebaseReceiptService"
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val params = WindowManager.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_PANEL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT
+        )
+
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = 0
+        params.y = 0
+        params.width = 0
+        params.height = 0
+
+        val webview = WebView(this)
+        webview.webViewClient = object : WebViewClient() {
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                Log.d("Error", "loading web view: request: $request error: $error")
+            }
+
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+
+
+                if (request.url.toString().contains("/endProcess")) {
+
+                    windowManager.removeView(webview)
+
+                    webview.post(Runnable { webview.destroy() })
+                    stopSelf()
+                    return WebResourceResponse("bgsType", "someEncoding", null)
+                } else {
+                    return null
+                }
+            }
+        }
+        AndroidUtils.webview = webview
+        automerge = Automerge(webview) {}
+        windowManager.addView(webview, params)
     }
 
     /**
@@ -157,6 +222,8 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
 
         // Apply the update.
+        // TODO: If user is not in main activity, the activity is lost. If this is the case,
+        // buffer the changes until main activity is open.
         broadcastIntent(Jk.GROUP_MESSAGE.text, decryptedUpdate)
         Log.i(TAG, "Sent JSON update intent.")
     }
@@ -172,7 +239,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, null, DocState.WAIT_PEER)
     }
 
     /**
@@ -242,13 +309,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     private fun handleCreateGroupResponse(response: JsonObject) {
         val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
         if (success) {
-            // Register group.
-            val groupName = getStringOrNull(response, Jk.GROUP_NAME.text)
-            val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
-            val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
-            val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
-                groupName, groupId, members) ?: return
-
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
             if (failedEmails.size == 0)
@@ -256,11 +316,24 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             else
                 Log.i(TAG, "Successfully created group but failed to add $failedEmails.")
 
-            // Create symmetric group key and send to peers.
-            val aesKey = EncryptionManager.generateKeyAESGCM()
-            GroupManager.setGroupKey(registeredGroupName, aesKey)
-            sendAesKeyToPeers(registeredGroupName, aesKey)
+            // Create document
+            automerge.createNewDocument {
+                // Register group.
+                val groupName = getStringOrNull(response, Jk.GROUP_NAME.text)
+                val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
+                val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
+                val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
+                    groupName, groupId, members, it, DocState.NEED_CREATE)
 
+                if (registeredGroupName != null) {
+                    // Create symmetric group key and send to peers.
+                    val aesKey = EncryptionManager.generateKeyAESGCM()
+                    GroupManager.setGroupKey(registeredGroupName, aesKey)
+                    // TODO: SEND KEY AND AUTOMERGE DOC.
+                    sendAesKeyToPeers(registeredGroupName, aesKey)
+                }
+                Log.i(TAG, "ASYNCHRONOUSLY CREATED DOCUMENT")
+            }
         } else {
             Log.i(TAG, "Failed to create new group.")
         }
@@ -275,7 +348,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?): String? {
+    private fun registerValidatedGroupAndBroadcastOnSuccess(
+        groupName: String?, groupId: String?, members: JsonArray?, document: String?,
+        docState: DocState): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
             return null
@@ -311,7 +386,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
 
         // TODO: Apply check to see if group name exists, in which case add (1) to the end.
-        GroupManager.registerGroup(usedGroupName, groupId, memberEmails)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, document, docState)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
 
         return usedGroupName

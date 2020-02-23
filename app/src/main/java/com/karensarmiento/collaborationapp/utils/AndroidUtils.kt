@@ -1,5 +1,6 @@
 package com.karensarmiento.collaborationapp.utils
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -7,8 +8,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.webkit.WebView
 
+@SuppressLint("StaticFieldLeak")
 object AndroidUtils {
+
+    var webview: WebView? = null
+
     fun hideKeyboard(activity: Activity) {
         val imm = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
         var view = activity.currentFocus
