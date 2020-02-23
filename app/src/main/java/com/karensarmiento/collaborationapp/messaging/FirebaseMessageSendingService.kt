@@ -16,7 +16,22 @@ import javax.json.Json
  */
 object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
-    private const val TTL = 2000
+    private const val TTL = 200
+
+    fun sendDocumentToPeer(peerEmail: String, groupId: String, document: String) {
+        // Build message containing symmetric key.
+        val peerMessage = Json.createObjectBuilder()
+            .add(Jk.PEER_TYPE.text, Jk.DOCUMENT_INIT.text)
+            .add(Jk.GROUP_ID.text, groupId)
+            .add(Jk.DOCUMENT.text, document)
+            .build().toString()
+
+        // Send encrypted message.
+        val messageId = AccountUtils.getUniqueId()
+        sendEncryptedPeerMessage(peerMessage, peerEmail, messageId)
+
+        Log.i(TAG, "Sent forward document to peer request to server: $messageId")
+    }
 
     fun sendSymmetricKeyToPeer(peerEmail: String, groupId: String, key: String) {
         // Build message containing symmetric key.
@@ -26,22 +41,9 @@ object FirebaseMessageSendingService {
             .add(Jk.SYMMETRIC_KEY.text, key)
             .build().toString()
 
-        // Encrypt peer message with peer's key.
-        // TODO: Need AES? Will message always be small enough without AES?
-        val peerKey = AddressBook.getContactKey(peerEmail) ?: return
-        val encryptedPeerMessage = EncryptionManager.maybeEncryptRSA(peerMessage, peerKey) ?: return
-
         // Create request.
-        val request = Json.createObjectBuilder()
-            .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_PEER.text)
-            .add(Jk.PEER_EMAIL.text, peerEmail)
-            .add(Jk.PEER_MESSAGE.text, encryptedPeerMessage)
-            .build().toString()
-
-        // Send request to server.
         val messageId = AccountUtils.getUniqueId()
-        sendEncryptedServerRequest(request, messageId)
-        Log.i(TAG, "Sent register public key request to server: $messageId")
+        sendEncryptedPeerMessage(peerMessage, peerEmail, messageId)
     }
 
     fun sendRegisterPublicKeyRequest(publicKey: String) {
@@ -147,8 +149,8 @@ object FirebaseMessageSendingService {
     private fun sendEncryptedServerRequest(request: String, messageId: String) {
         // Encrypt request.
         val aesKey = EncryptionManager.generateKeyAESGCM()
-        var encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
-        var aesKeyString = EncryptionManager.keyAsString(aesKey)
+        val encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
+        val aesKeyString = EncryptionManager.keyAsString(aesKey)
         val encryptedKey = EncryptionManager.maybeEncryptRSA(aesKeyString, EncryptionManager.FB_SERVER_PUBLIC_KEY)
         if (encryptedKey == null) {
             Log.e(TAG, "Could not encrypt request. Will not send message.")
@@ -165,5 +167,30 @@ object FirebaseMessageSendingService {
                 //TODO: Change identifier to from email something non public e.g. random gen string associated with email.
                 .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
                 .build())
+    }
+
+    private fun sendEncryptedPeerMessage(request: String, peerEmail: String, messageId: String) {
+        // Encrypt request.
+        val peerKey = AddressBook.getContactKey(peerEmail) ?: return
+        val aesKey = EncryptionManager.generateKeyAESGCM()
+        val encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
+        val aesKeyString = EncryptionManager.keyAsString(aesKey)
+        val encryptedKey = EncryptionManager.maybeEncryptRSA(aesKeyString, peerKey)
+        if (encryptedKey == null) {
+            Log.e(TAG, "Could not encrypt request. Will not send message.")
+            return
+        }
+
+        // Create request.
+        val forwardToPeerRequest = Json.createObjectBuilder()
+            .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_PEER.text)
+            .add(Jk.PEER_EMAIL.text, peerEmail)
+            .add(Jk.PEER_MESSAGE.text, Json.createObjectBuilder()
+                .add(Jk.ENC_MESSAGE.text, encryptedRequest)
+                .add(Jk.ENC_KEY.text, encryptedKey))
+            .build().toString()
+
+        // Send request to server.
+        sendEncryptedServerRequest(forwardToPeerRequest, messageId)
     }
 }

@@ -24,4 +24,5 @@
     <string name="text_no_friends">This list hasn\'t been shared with anyone yet.</string>
     <string name="button_back">Back</string>
     <string name="button_leave">Leave Group</string>
+    <string name="button_create_doc">Init Document (debug)</string>
 </resources>
