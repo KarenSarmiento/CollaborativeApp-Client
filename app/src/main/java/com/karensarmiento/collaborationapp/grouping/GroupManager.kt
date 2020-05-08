@@ -37,7 +37,7 @@ object GroupManager {
     }
 
     fun registerGroup(
-        groupName: String, groupId: String, memberEmails: MutableSet<String>, document: String?,
+        groupName: String, groupId: String, memberEmails: MutableSet<String>, document: String,
         key: SecretKey? = null) {
         if (groupName in groups) {
             Log.e(TAG, "Cannot register group with name $groupName since group already exists.")
@@ -124,4 +124,4 @@ object GroupManager {
  *  GroupId is a globally unique identifier for the group.
  */
 data class GroupData(var groupId: String, val members: MutableSet<String>, var key: SecretKey?,
-                     var document: String?)
+                     var document: String)

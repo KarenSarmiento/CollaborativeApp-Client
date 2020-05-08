@@ -69,8 +69,11 @@ enum class JsonKeyword(val text: String) {
     CHANGES("changes"),
     UPDATED_DOC("updated_doc"),
 
-    // Intents.
-    VALUE("value")
+    // Miscellaneous.
+    VALUE("value"),
+    WAITING_FOR_PEER("waiting_for_peer"),
+    WAITING_FOR_SELF("waiting_for_self")
+    //TODO: SET THE DOC STATE TO WAITING_FOR_PEER IF WE DO NOT WISH TO APPLY INIT, BUT INSTEAD, WISH TO WAIT TO MERGE WITH THE DOC INIT
 }
 
 fun jsonStringToJsonObject(jsonString: String): JsonObject =

@@ -4,6 +4,9 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
+import com.karensarmiento.collaborationapp.collaboration.docInits
+import com.karensarmiento.collaborationapp.collaboration.peerMerges
+import com.karensarmiento.collaborationapp.collaboration.peerUpdates
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -119,8 +122,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
         val groupName = GroupManager.groupName(groupId) ?: return
         GroupManager.setDocument(groupName, document)
-        broadcastIntent(Jk.DOCUMENT_INIT.text, groupName) //TODO: MERGE!!!!!!
-        Log.i(TAG , "Initialised document for group $groupName.")
+        peerMerges.pushUpdate(groupName, document)
+        broadcastIntent(Jk.DOCUMENT_INIT.text, groupName)
+        Log.i(TAG , "Pushed document init for group $groupName to buffer.")
     }
 
     /**
@@ -171,7 +175,8 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
 
         // Apply the update.
-        broadcastIntent(Jk.GROUP_MESSAGE.text, decryptedUpdate)
+        peerUpdates.pushUpdate(groupName, decryptedUpdate)
+        broadcastIntent(Jk.GROUP_MESSAGE.text, groupName)
         Log.i(TAG, "Sent JSON update intent.")
     }
 
@@ -186,7 +191,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, Jk.WAITING_FOR_PEER.text)
     }
 
     /**
@@ -268,7 +273,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
             val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
             val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
-                groupName, groupId, members) ?: return
+                groupName, groupId, members, Jk.WAITING_FOR_SELF.text) ?: return
 
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
@@ -282,6 +287,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             GroupManager.setGroupKey(registeredGroupName, aesKey)
             sendAesKeyToPeers(registeredGroupName, aesKey)
 
+            docInits.pushUpdate(groupName!!, groupName)
+            Log.i(TAG, "BLOOP: Pushing to doc inits!")
+            Log.i(TAG, "BLOOP: Doc init is: ${docInits.getPendingUpdates()}")
             // ASSERT no peers area added in create group, so we do not need to send them the
             // new document state here, only when we add them.
             // TODO: Remove members fields??
@@ -299,7 +307,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?): String? {
+    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?, document: String): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
             return null
@@ -334,7 +342,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             }
         }
 
-        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, null)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, document)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
         return usedGroupName
     }

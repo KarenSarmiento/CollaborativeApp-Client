@@ -16,9 +16,41 @@ let createNewTodoList = function() {
     return Automerge.save(newDoc)
 }
 
+let mergeNewDocument = function(docToMerge) {
+    // Load doc.
+    let docToMergeDecoded = decodeURIComponent(docToMerge)
+
+    // Merge and return
+    let newDoc = Automerge.merge(Automerge.init(), Automerge.load(docToMergeDecoded))
+    return Automerge.save(newDoc)
+}
+
+let testing = function(docPersisted, changes) {
+    // Load doc.
+    let docDecoded = decodeURIComponent(docPersisted)
+    let docLoaded = Automerge.load(docDecoded)
+    
+    // Parse changes.
+    let changesDecoded = decodeURIComponent(changes)
+    
+    console.log("~ Changes = %s", changesDecoded)
+    console.log("~ docLoaded = %s", docLoaded)
+    return changes
+}
+
 let applyJsonUpdate = function(docPersisted, changes) {
-    let doc = Automerge.load(docPersisted)
-    let updatedDoc = Automerge.applyChanges(doc, changes)
+    // Load doc.
+    let docDecoded = decodeURIComponent(docPersisted)
+    let docLoaded = Automerge.load(docDecoded)
+    
+    // Parse changes.
+    let changesDecoded = decodeURIComponent(changes)
+    let changesParsed = JSON.parse(changesDecoded)
+
+    // Apply changes.
+    let updatedDoc = Automerge.applyChanges(docLoaded, changesParsed)
+
+    // Return new doc.
     log("> " + JSON.stringify(updatedDoc.cards))
     ktchannel.onCardsChange(JSON.stringify(updatedDoc.cards))
     return Automerge.save(updatedDoc)

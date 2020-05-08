@@ -44,7 +44,7 @@ internal class Automerge(
      *
      * All functions which make changes to state return a JSON summarising the change. This can be
      * accessed through the use of a functional callback.
-     */ // TODO: Ensure that a document is not edited concurrently.
+     */ // TODO: Ensure that a document is not edited concurrently. CREATE LOCK ON WEBVIEW?
     fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
         // TODO: Protect against javascript injection.
@@ -71,19 +71,34 @@ internal class Automerge(
         }
     }
 
-    fun applyJsonUpdate(groupName: String, jsonUpdate: String) {
+    fun applyJsonUpdate(groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
-        webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), $jsonUpdate);") {
-            handleUpdateOutput(it, groupName, null)
+        webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), encodeURIComponent(\"$jsonUpdate\"));") {
+            if (it != "null" && it != null) {
+                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                callback?.invoke(it)
+            }
         }
     }
 
 
     fun createNewDocument(groupName: String, callback: ((String) -> Unit)? = null)  {
         webview.evaluateJavascript("javascript:createNewTodoList();") {
+            Log.i(TAG, "BLOOP: CreateNewDocumentCalled!")
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
+            }
+        }
+    }
+
+    fun mergeNewDocument(groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
+        Log.i(TAG, "BLOOP: mergeNewDocument called")
+        webview.evaluateJavascript("javascript:mergeNewDocument(encodeURIComponent(\"$docToMerge\"));") {
+            if (it != "null" && it != null) {
+                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                callback?.invoke(it)
+                Log.i(TAG, "BLOOP: Merging new document to get ${it.removeSurrounding("\"")}")
             }
         }
     }
@@ -94,7 +109,8 @@ internal class Automerge(
         val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
 
         GroupManager.setDocument(groupName, escapePunctuation(updatedDoc!!))
-        callback?.invoke(changes!!.toString())
+        print(escapePunctuation(updatedDoc!!))
+        callback?.invoke(escapePunctuation(changes!!.toString()))
     }
 
     /**
