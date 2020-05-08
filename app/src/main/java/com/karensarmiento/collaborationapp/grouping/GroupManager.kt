@@ -36,13 +36,31 @@ object GroupManager {
         return groups[groupName]?.groupId
     }
 
-    fun registerGroup(groupName: String, groupId: String, memberEmails: MutableSet<String>, key: SecretKey? = null) {
+    fun registerGroup(
+        groupName: String, groupId: String, memberEmails: MutableSet<String>, document: String,
+        key: SecretKey? = null) {
         if (groupName in groups) {
             Log.e(TAG, "Cannot register group with name $groupName since group already exists.")
             return
         }
-        groups[groupName] = GroupData(groupId, memberEmails, key)
+        groups[groupName] = GroupData(groupId, memberEmails, key, document)
         Log.i(TAG, "Registered $groupName to groupId $groupId.")
+    }
+
+    fun getDocument(groupName: String): String? {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot get document for group $groupName since this group does not exist.")
+            return null
+        }
+        return groups[groupName]!!.document
+    }
+
+    fun setDocument(groupName: String, document: String) {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Cannot set document for group $groupName since this group does not exist.")
+            return
+        }
+        groups[groupName]!!.document = document
     }
 
     fun getAllRegisteredGroups(): MutableSet<String> {
@@ -58,9 +76,7 @@ object GroupManager {
             Log.e(TAG, "Cannot set key for group $groupName since this group does not exist.")
             return
         }
-
-        val curr = groups[groupName]!!
-        groups[groupName] = GroupData(curr.groupId, curr.members, aesKey)
+        groups[groupName]!!.key = aesKey
     }
 
     fun getMembers(groupName: String): Set<String>? {
@@ -107,4 +123,5 @@ object GroupManager {
  *
  *  GroupId is a globally unique identifier for the group.
  */
-data class GroupData(var groupId: String, val members: MutableSet<String>, val key: SecretKey?)
+data class GroupData(var groupId: String, val members: MutableSet<String>, var key: SecretKey?,
+                     var document: String)

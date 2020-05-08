@@ -5,6 +5,9 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
+import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.utils.*
+import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -41,28 +44,74 @@ internal class Automerge(
      *
      * All functions which make changes to state return a JSON summarising the change. This can be
      * accessed through the use of a functional callback.
-     */
-    fun addCard(card: Card, callback: ((String) -> Unit)? = null) =
+     */ // TODO: Ensure that a document is not edited concurrently. CREATE LOCK ON WEBVIEW?
+    fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
+        val document = GroupManager.getDocument(groupName)
+        // TODO: Protect against javascript injection.
         webview.evaluateJavascript(
-            // TODO: Protect against javascript injection.
-            "javascript:addCard(\"${card.title}\", ${card.completed});") {
-            callback?.invoke(it)
+            "javascript:addCard(encodeURIComponent(\"$document\"), \"${card.title}\", ${card.completed});") {
+            handleUpdateOutput(it, groupName, callback)
         }
+    }
 
-    fun removeCard(index: Int, callback: ((String) -> Unit)? = null) =
-        webview.evaluateJavascript("javascript:removeCard(\"${index}\");") {
-            callback?.invoke(it)
+
+    fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
+        val document = GroupManager.getDocument(groupName)
+        webview.evaluateJavascript("javascript:removeCard(encodeURIComponent(\"$document\"), \"${index}\");") {
+            handleUpdateOutput(it, groupName, callback)
         }
+    }
 
-    fun setCardCompleted(index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) =
+
+    fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
+        val document = GroupManager.getDocument(groupName)
         webview.evaluateJavascript(
-            "javascript:setCardCompleted(\"${index}\", ${completed});") {
-            callback?.invoke(it)
+            "javascript:setCardCompleted(encodeURIComponent(\"$document\"), \"${index}\", ${completed});") {
+            handleUpdateOutput(it, groupName, callback)
         }
+    }
 
-    fun applyJsonUpdate(jsonUpdate: String) =
-        webview.evaluateJavascript(
-            "javascript:applyJsonUpdate($jsonUpdate);") {}
+    fun applyJsonUpdate(groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
+        val document = GroupManager.getDocument(groupName)
+        webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), encodeURIComponent(\"$jsonUpdate\"));") {
+            if (it != "null" && it != null) {
+                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                callback?.invoke(it)
+            }
+        }
+    }
+
+
+    fun createNewDocument(groupName: String, callback: ((String) -> Unit)? = null)  {
+        webview.evaluateJavascript("javascript:createNewTodoList();") {
+            Log.i(TAG, "BLOOP: CreateNewDocumentCalled!")
+            if (it != "null" && it != null) {
+                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                callback?.invoke(it)
+            }
+        }
+    }
+
+    fun mergeNewDocument(groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
+        Log.i(TAG, "BLOOP: mergeNewDocument called")
+        webview.evaluateJavascript("javascript:mergeNewDocument(encodeURIComponent(\"$docToMerge\"));") {
+            if (it != "null" && it != null) {
+                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                callback?.invoke(it)
+                Log.i(TAG, "BLOOP: Merging new document to get ${it.removeSurrounding("\"")}")
+            }
+        }
+    }
+
+    private fun handleUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
+        val responseJson = jsonStringToJsonObject(output)
+        val changes = getJsonArrayOrNull(responseJson, Jk.CHANGES.text)
+        val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
+
+        GroupManager.setDocument(groupName, escapePunctuation(updatedDoc!!))
+        print(escapePunctuation(updatedDoc!!))
+        callback?.invoke(escapePunctuation(changes!!.toString()))
+    }
 
     /**
      * Setups the WebView object by enabling JS and adding the JS callbacks. Also enables a remote

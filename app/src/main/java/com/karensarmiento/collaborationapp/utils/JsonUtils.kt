@@ -56,6 +56,8 @@ enum class JsonKeyword(val text: String) {
     PEER_MESSAGE("peer_message"),
     SYMMETRIC_KEY_UPDATE("symmetric_key_update"),
     SYMMETRIC_KEY("symmetric_key"),
+    DOCUMENT("document"),
+    DOCUMENT_INIT("document_init"),
     // TODO: Add timestamp for when group key can change.
 
     // Sending messages to device groups.
@@ -63,8 +65,15 @@ enum class JsonKeyword(val text: String) {
     GROUP_MESSAGE("group_message"),
     ORIGINATOR("originator"),
 
-    // Intents
-    VALUE("value")
+    // Talking with Automerge.
+    CHANGES("changes"),
+    UPDATED_DOC("updated_doc"),
+
+    // Miscellaneous.
+    VALUE("value"),
+    WAITING_FOR_PEER("waiting_for_peer"),
+    WAITING_FOR_SELF("waiting_for_self")
+    //TODO: SET THE DOC STATE TO WAITING_FOR_PEER IF WE DO NOT WISH TO APPLY INIT, BUT INSTEAD, WISH TO WAIT TO MERGE WITH THE DOC INIT
 }
 
 fun jsonStringToJsonObject(jsonString: String): JsonObject =
@@ -102,4 +111,18 @@ fun getJsonArrayOrNull(jsonObject: JsonObject, fieldName: String): JsonArray? {
     if (field == null)
         Log.w(TAG, "Missing field \"$fieldName\" in packet $jsonObject")
     return field
+}
+
+fun getJsonObjectOrNull(jsonObject: JsonObject, fieldName: String): JsonObject? {
+    val field = jsonObject.getJsonObject(fieldName)
+    if (field == null)
+        Log.w(TAG, "Missing object field \"$fieldName\" in packet $jsonObject")
+    return field
+}
+
+fun escapePunctuation(string: String): String {
+    return string.replace("\\", "\\\\")
+                 .replace("\"", "\\\"")
+                 .replace("\'", "\\\'")
+                 .replace("\$", "\\\$")
 }

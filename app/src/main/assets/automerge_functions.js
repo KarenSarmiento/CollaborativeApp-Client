@@ -6,91 +6,97 @@
  * interface, which is defined in Automerge.kt.
  */
 
-const updateTypes = {
-    ADD_TODO: "addTodo",
-    REMOVE_TODO: "removeTodo",
-    UPDATE_COMPLETED: "setTodoCompleted"
-}
-
 let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
+let CHANGES = "changes"
+let UPDATED_DOC = "updated_doc"
 
-let doc = Automerge.from({ cards: [] })
-
-let applyJsonUpdate = function(jsonUpdate) {
-    switch(jsonUpdate.updateType) {
-        case updateTypes.ADD_TODO:
-            addCard(jsonUpdate.update.label, false)
-            break;
-        case updateTypes.REMOVE_TODO:
-            removeCard(jsonUpdate.update.index)
-            break;
-        case updateTypes.UPDATE_COMPLETED:
-            setCardCompleted(jsonUpdate.update.index, jsonUpdate.update.completed)
-            break;
-    }
-
+let createNewTodoList = function() {
+    let newDoc = Automerge.from({ cards: [] })
+    log("Created new todo list: " + newDoc)
+    return Automerge.save(newDoc)
 }
 
-let addCard = function (title, completed) {
-    eventName = "automerge_addCard"
-    ktchannel.startEvent(eventName)
+let mergeNewDocument = function(docToMerge) {
+    // Load doc.
+    let docToMergeDecoded = decodeURIComponent(docToMerge)
 
-    doc = Automerge.change(doc, 'Add card', it => {
-        it.cards.push({ title: title, completed:completed })
-    })
-    log("> " + JSON.stringify(doc.cards))
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
-
-    ktchannel.endEvent(eventName)
-
-    updateMessage = {
-        "updateType" : "addTodo",
-        "update" : {
-            "label" : title
-        }
-    }
-    return updateMessage
+    // Merge and return
+    let newDoc = Automerge.merge(Automerge.init(), Automerge.load(docToMergeDecoded))
+    return Automerge.save(newDoc)
 }
 
-let removeCard = function (index) {
-    eventName = "automerge_removeCard"
-    ktchannel.startEvent(eventName)
-
-    doc = Automerge.change(doc, 'Delete card', it => {
-      delete it.cards[index]
-    })
-    log("> " + JSON.stringify(doc.cards))
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
-
-    ktchannel.endEvent(eventName)
-
-    updateMessage = {
-        "updateType" : "removeTodo",
-        "update" : {
-            "index" : index
-        }
-    }
-    return updateMessage
+let testing = function(docPersisted, changes) {
+    // Load doc.
+    let docDecoded = decodeURIComponent(docPersisted)
+    let docLoaded = Automerge.load(docDecoded)
+    
+    // Parse changes.
+    let changesDecoded = decodeURIComponent(changes)
+    
+    console.log("~ Changes = %s", changesDecoded)
+    console.log("~ docLoaded = %s", docLoaded)
+    return changes
 }
 
-let setCardCompleted = function (index, completed) {
-    eventName = "automerge_setCardCompleted"
+let applyJsonUpdate = function(docPersisted, changes) {
+    // Load doc.
+    let docDecoded = decodeURIComponent(docPersisted)
+    let docLoaded = Automerge.load(docDecoded)
+    
+    // Parse changes.
+    let changesDecoded = decodeURIComponent(changes)
+    let changesParsed = JSON.parse(changesDecoded)
+
+    // Apply changes.
+    let updatedDoc = Automerge.applyChanges(docLoaded, changesParsed)
+
+    // Return new doc.
+    log("> " + JSON.stringify(updatedDoc.cards))
+    ktchannel.onCardsChange(JSON.stringify(updatedDoc.cards))
+    return Automerge.save(updatedDoc)
+}
+
+let applyLocalChange = function(eventName, docPersisted, changeLambda) {
     ktchannel.startEvent(eventName)
 
-    doc = Automerge.change(doc, 'Set Completed', it => {
-      it.cards[index].completed = completed
-    })
-    log("> " + JSON.stringify(doc.cards))
-    ktchannel.onCardsChange(JSON.stringify(doc.cards))
+    // Load doc.
+    let docPersistedDecoded = decodeURIComponent(docPersisted)
+    let doc = Automerge.load(docPersistedDecoded)
 
+    // Apply change.
+    let newDoc = Automerge.change(doc, eventName, changeLambda)
+    let changes = Automerge.getChanges(doc, newDoc)
+
+    // Return new doc.
+    let newDocPersisted = Automerge.save(newDoc)
+
+    log("> " + JSON.stringify(newDoc.cards))
+    ktchannel.onCardsChange(JSON.stringify(newDoc.cards))
     ktchannel.endEvent(eventName)
 
-    updateMessage = {
-        "updateType" : "setTodoCompleted",
-        "update" : {
-            "index" : index,
-            "completed" : completed
+    return {[CHANGES]:changes, [UPDATED_DOC]: newDocPersisted}
+}
+
+let addCard = function (docPersisted, title, completed) {
+    let eventName = "automerge_addCard"
+    let changeLambda = it => {
+            it.cards.push({ title: title, completed:completed })
         }
-    }
-    return updateMessage
+    return applyLocalChange(eventName, docPersisted, changeLambda)
+}
+
+let removeCard = function (docPersisted, index) {
+    let eventName = "automerge_removeCard"
+    let changeLambda = it => {
+            delete it.cards[index]
+        }
+    return applyLocalChange(eventName, docPersisted, changeLambda)
+}
+
+let setCardCompleted = function (docPersisted, index, completed) {
+    let eventName = "automerge_setCardCompleted"
+    let changeLambda = it => {
+            it.cards[index].completed = completed
+        }
+    return applyLocalChange(eventName, docPersisted, changeLambda)
 }

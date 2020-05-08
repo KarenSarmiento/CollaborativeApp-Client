@@ -4,6 +4,9 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import android.content.Intent
+import com.karensarmiento.collaborationapp.collaboration.docInits
+import com.karensarmiento.collaborationapp.collaboration.peerMerges
+import com.karensarmiento.collaborationapp.collaboration.peerUpdates
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -33,15 +36,17 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Received message with data payload: " + remoteMessage.data)
-            val decryptedMessage = getDecryptedMessage(remoteMessage.data)
+            Log.d(TAG, "Received message!")
+            val encryptedKey = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_KEY.text) ?: return
+            val encryptedMessage = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_MESSAGE.text) ?: return
+            val decryptedMessage = getDecryptedMessage(encryptedKey, encryptedMessage)
             if (decryptedMessage == null) {
                 Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
                         " Will ignore it.")
                 return
             }
-            Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
 
+            Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
             when(val downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)) {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage)
@@ -89,20 +94,37 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     private fun handleForwardToPeerMessage(message: JsonObject) {
         // Decrypt message using private key.
-        val peerMessage = getStringOrNull(message, Jk.PEER_MESSAGE.text) ?: return
-        val decryptedMessage = EncryptionManager.decryptWithOwnPrivateKey(peerMessage)
-        if (decryptedMessage == null) {
-            Log.i(TAG, "Could not decrypt message with own key. Will ignore it.")
+        val peerMessage = getJsonObjectOrNull(message, Jk.PEER_MESSAGE.text) ?: return
+        val encryptedKey = getStringOrNull(peerMessage, Jk.ENC_KEY.text) ?: return
+        val encryptedMessage = getStringOrNull(peerMessage, Jk.ENC_MESSAGE.text) ?: return
+        val decryptedPeerMessage = getDecryptedMessage(encryptedKey, encryptedMessage)
+        if (decryptedPeerMessage == null) {
+            Log.e(TAG, "Could not decrypt peer message. Will ignore it.")
             return
         }
-        val decryptedJson = jsonStringToJsonObject(decryptedMessage)
 
         // Handle the message
-        when(val peerType = getStringOrNull(decryptedJson, Jk.PEER_TYPE.text)) {
-            null -> Log.w(TAG, "No peer type was specified in received message.")
-            Jk.SYMMETRIC_KEY_UPDATE.text -> handleSymmetricKeyUpdate(decryptedJson)
+        val peerType = getStringOrNull(decryptedPeerMessage, Jk.PEER_TYPE.text) ?: return
+        Log.i(TAG, "Got peer message of type $peerType: $decryptedPeerMessage")
+        when(peerType) {
+            Jk.SYMMETRIC_KEY_UPDATE.text -> handleSymmetricKeyUpdate(decryptedPeerMessage)
+            Jk.DOCUMENT_INIT.text -> handleDocumentInitMessage(decryptedPeerMessage)
             else ->  Log.w(TAG, "Peer type $peerType not yet supported.")
         }
+    }
+
+    /**
+     *  Handle updates to group symmetric keys.
+     */
+    private fun handleDocumentInitMessage(message: JsonObject) {
+        val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
+        val document = getStringOrNull(message, Jk.DOCUMENT.text) ?: return
+
+        val groupName = GroupManager.groupName(groupId) ?: return
+        GroupManager.setDocument(groupName, document)
+        peerMerges.pushUpdate(groupName, document)
+        broadcastIntent(Jk.DOCUMENT_INIT.text, groupName)
+        Log.i(TAG , "Pushed document init for group $groupName to buffer.")
     }
 
     /**
@@ -117,11 +139,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         Log.i(TAG , "Updated group key for group $groupName.")
     }
 
-    private fun getDecryptedMessage(data: Map<String, String>): JsonObject? {
-        // Get encrypted AES key and data.
-        val encryptedKey = getStringOrNullFromMap(data, Jk.ENC_KEY.text) ?: return null
-        val encryptedMessage = getStringOrNullFromMap(data, Jk.ENC_MESSAGE.text) ?: return null
-
+    private fun getDecryptedMessage(encryptedKey: String, encryptedMessage: String): JsonObject? {
         // Decrypt AES key and obtain SecretKey object.
         val privateKey = EncryptionManager.getPrivateKeyAsString()
         val decryptedKey = EncryptionManager.maybeDecryptRSA(encryptedKey, privateKey) ?: return null
@@ -157,7 +175,8 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
 
         // Apply the update.
-        broadcastIntent(Jk.GROUP_MESSAGE.text, decryptedUpdate)
+        peerUpdates.pushUpdate(groupName, decryptedUpdate)
+        broadcastIntent(Jk.GROUP_MESSAGE.text, groupName)
         Log.i(TAG, "Sent JSON update intent.")
     }
 
@@ -172,7 +191,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, Jk.WAITING_FOR_PEER.text)
     }
 
     /**
@@ -205,11 +224,18 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             val peerToken = getStringOrNull(response, Jk.PEER_TOKEN.text) ?: return
             val peerPublicKey = getStringOrNull(response, Jk.PEER_PUBLIC_KEY.text) ?: return
 
+            // Add peer to contacts and group.
             AddressBook.addContact(peerEmail, peerToken, peerPublicKey)
             GroupManager.addToGroup(groupName, peerEmail)
+
+            // Send peer group key.
             val groupKey = GroupManager.getGroupKey(groupName) ?: return
             FirebaseMessageSendingService.sendSymmetricKeyToPeer(
                 peerEmail, groupId, EncryptionManager.keyAsString(groupKey))
+
+            // Send peer the up to date doc.
+            val document = GroupManager.getDocument(groupName) ?: return
+            FirebaseMessageSendingService.sendDocumentToPeer(peerEmail, groupId, document)
             broadcastIntent(Jk.ADD_PEER_TO_GROUP.text, groupName)
         } else {
             Log.i(TAG, "Received unsuccessful add peer to group response.")
@@ -247,7 +273,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
             val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
             val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
-                groupName, groupId, members) ?: return
+                groupName, groupId, members, Jk.WAITING_FOR_SELF.text) ?: return
 
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
@@ -261,6 +287,12 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             GroupManager.setGroupKey(registeredGroupName, aesKey)
             sendAesKeyToPeers(registeredGroupName, aesKey)
 
+            docInits.pushUpdate(groupName!!, groupName)
+            Log.i(TAG, "BLOOP: Pushing to doc inits!")
+            Log.i(TAG, "BLOOP: Doc init is: ${docInits.getPendingUpdates()}")
+            // ASSERT no peers area added in create group, so we do not need to send them the
+            // new document state here, only when we add them.
+            // TODO: Remove members fields??
         } else {
             Log.i(TAG, "Failed to create new group.")
         }
@@ -275,7 +307,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?): String? {
+    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?, document: String): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
             return null
@@ -310,10 +342,8 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             }
         }
 
-        // TODO: Apply check to see if group name exists, in which case add (1) to the end.
-        GroupManager.registerGroup(usedGroupName, groupId, memberEmails)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, document)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
-
         return usedGroupName
     }
 
@@ -336,7 +366,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         // TODO: Notify server of updated registration ID.
         Log.d(TAG, "Refreshed token: $token")
     }
-
 
     private fun broadcastIntent(action: String, value: String) {
         val updateIntent = Intent()
