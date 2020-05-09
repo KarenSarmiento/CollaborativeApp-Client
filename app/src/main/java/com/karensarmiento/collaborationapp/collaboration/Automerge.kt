@@ -5,6 +5,7 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
+import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.utils.*
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
@@ -65,17 +66,21 @@ internal class Automerge(
 
     fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
+        Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         webview.evaluateJavascript(
             "javascript:setCardCompleted(encodeURIComponent(\"$document\"), \"${index}\", ${completed});") {
+            Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
             handleUpdateOutput(it, groupName, callback)
         }
     }
 
     fun applyJsonUpdate(groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
+        Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
         webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), encodeURIComponent(\"$jsonUpdate\"));") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
                 callback?.invoke(it)
             }
         }

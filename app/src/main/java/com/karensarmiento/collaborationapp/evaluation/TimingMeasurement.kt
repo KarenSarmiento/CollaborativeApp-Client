@@ -1,7 +1,9 @@
 package com.karensarmiento.collaborationapp.evaluation
 
-var testCount = 0
-var currMeasurement = TimingMeasurement()
+object Test {
+    var count = 0
+    var currMeasurement = TimingMeasurement()
+}
 
 class TimingMeasurement(
     var start : Long? = null,

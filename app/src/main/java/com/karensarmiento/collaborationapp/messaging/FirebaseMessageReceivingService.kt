@@ -7,6 +7,7 @@ import android.content.Intent
 import com.karensarmiento.collaborationapp.collaboration.docInits
 import com.karensarmiento.collaborationapp.collaboration.peerMerges
 import com.karensarmiento.collaborationapp.collaboration.peerUpdates
+import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -34,9 +35,11 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Test.currMeasurement.receiveMessage = System.currentTimeMillis()
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Received message!")
+            Test.currMeasurement.decryptStart = System.currentTimeMillis()
             val encryptedKey = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_KEY.text) ?: return
             val encryptedMessage = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_MESSAGE.text) ?: return
             val decryptedMessage = getDecryptedMessage(encryptedKey, encryptedMessage)
@@ -46,7 +49,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 return
             }
 
-            Log.i(TAG, "**Decrypted packet and got: $decryptedMessage")
             when(val downstreamType = getStringOrNull(decryptedMessage, Jk.DOWNSTREAM_TYPE.text)) {
                 null -> Log.w(TAG, "No downstream type was specified in received message.")
                 Jk.ADDED_TO_GROUP.text -> handleAddedToGroupMessage(decryptedMessage)
@@ -124,7 +126,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         GroupManager.setDocument(groupName, document)
         peerMerges.pushUpdate(groupName, document)
         broadcastIntent(Jk.DOCUMENT_INIT.text, groupName)
-        Log.i(TAG , "Pushed document init for group $groupName to buffer.")
+        Log.i(TAG , "Handling document init message for group $groupName to buffer.")
     }
 
     /**
@@ -136,7 +138,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
 
         val groupName = GroupManager.groupName(groupId) ?: return
         GroupManager.setGroupKey(groupName, EncryptionManager.stringToKeyAESGCM(key))
-        Log.i(TAG , "Updated group key for group $groupName.")
+        Log.i(TAG , "Handling update group key message for group $groupName.")
     }
 
     private fun getDecryptedMessage(encryptedKey: String, encryptedMessage: String): JsonObject? {
@@ -156,6 +158,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     private fun handleJsonUpdateMessage(message: JsonObject) {
+        Log.i(TAG, "Handling Json Update Message.")
         val groupMessage = getStringOrNull(message, Jk.GROUP_MESSAGE.text) ?: return
         val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
 
@@ -173,11 +176,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             return
         }
         val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
-
+        Test.currMeasurement.decryptEnd = System.currentTimeMillis()
         // Apply the update.
         peerUpdates.pushUpdate(groupName, decryptedUpdate)
         broadcastIntent(Jk.GROUP_MESSAGE.text, groupName)
-        Log.i(TAG, "Sent JSON update intent.")
     }
 
     /**
@@ -266,6 +268,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  @param response JsonObject representing the message received from Firebase Cloud Messaging.
      */
     private fun handleCreateGroupResponse(response: JsonObject) {
+        Log.i(TAG, "Handling create group response.")
         val success = getBooleanOrNull(response, Jk.SUCCESS.text) ?: return
         if (success) {
             // Register group.
@@ -288,8 +291,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             sendAesKeyToPeers(registeredGroupName, aesKey)
 
             docInits.pushUpdate(groupName!!, groupName)
-            Log.i(TAG, "BLOOP: Pushing to doc inits!")
-            Log.i(TAG, "BLOOP: Doc init is: ${docInits.getPendingUpdates()}")
             // ASSERT no peers area added in create group, so we do not need to send them the
             // new document state here, only when we add them.
             // TODO: Remove members fields??
@@ -371,12 +372,11 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val updateIntent = Intent()
         updateIntent.action = action
         updateIntent.putExtra(Jk.VALUE.text, value)
-        Log.i(TAG, "Calling sendBroadcast on intent: $updateIntent")
         sendBroadcast(updateIntent)
     }
 
-    override fun onMessageSent(s: String) {
-        super.onMessageSent(s)
-        Log.i(TAG, "*** Officially sent upstream message: $s")
-    }
+//    override fun onMessageSent(s: String) {
+//        super.onMessageSent(s)
+//        Log.i(TAG, "*** Officially sent upstream message: $s")
+//    }
 }

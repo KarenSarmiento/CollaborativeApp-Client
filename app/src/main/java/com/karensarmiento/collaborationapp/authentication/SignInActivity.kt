@@ -1,10 +1,15 @@
 package com.karensarmiento.collaborationapp.authentication
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -18,6 +23,9 @@ import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as Firebase
 import com.karensarmiento.collaborationapp.utils.AccountUtils
 import kotlinx.android.synthetic.main.activity_sign_in.*
+import java.io.File
+import java.io.IOException
+
 
 class SignInActivity : AppCompatActivity() {
 
@@ -36,6 +44,39 @@ class SignInActivity : AppCompatActivity() {
         firebaseAuth = FirebaseAuth.getInstance()
         configureGoogleSignIn()
         setUpButtonListeners()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1
+            )
+        } else {
+            createEvalFile()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>, grantResults: IntArray) {
+        when (requestCode) {
+            1 -> createEvalFile()
+        }
+    }
+
+    private fun createEvalFile() {
+        val path = "${Environment.getExternalStorageDirectory()}/eval_measurements.txt"
+        val file = File(path)
+        if (!file.exists()) {
+            try {
+                file.createNewFile()
+            } catch (ioe: IOException) {
+                ioe.printStackTrace()
+            }
+        }
+        file.writeText("")
     }
 
     private fun configureGoogleSignIn() {

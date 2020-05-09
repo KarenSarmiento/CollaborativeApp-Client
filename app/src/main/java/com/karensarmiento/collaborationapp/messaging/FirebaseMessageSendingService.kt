@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.messaging
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
+import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.utils.AccountUtils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
@@ -70,6 +71,7 @@ object FirebaseMessageSendingService {
     }
 
     private fun sendJsonUpdateToDeviceGroup(groupName: String, jsonUpdate: String) {
+        Test.currMeasurement.encryptStart = System.currentTimeMillis()
         // Encrypt JSON update.
         val groupKey = GroupManager.getCurrentGroupKey() ?: return
         val encryptedUpdate = EncryptionManager.encryptAESGCM(jsonUpdate, groupKey)
@@ -156,6 +158,7 @@ object FirebaseMessageSendingService {
             Log.e(TAG, "Could not encrypt request. Will not send message.")
             return
         }
+        Test.currMeasurement.encryptEnd = System.currentTimeMillis()
 
         // Send encrypted request.
         FirebaseMessaging.getInstance().send(
@@ -167,6 +170,7 @@ object FirebaseMessageSendingService {
                 //TODO: Change identifier to from email something non public e.g. random gen string associated with email.
                 .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
                 .build())
+        Test.currMeasurement.sendMessage = System.currentTimeMillis()
     }
 
     private fun sendEncryptedPeerMessage(request: String, peerEmail: String, messageId: String) {

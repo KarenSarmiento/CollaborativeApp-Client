@@ -10,6 +10,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.os.Build
+import android.os.Environment
 import android.widget.ImageButton
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import kotlinx.android.synthetic.main.todo_entry_box.view.*
@@ -24,6 +26,10 @@ import com.karensarmiento.collaborationapp.utils.AndroidUtils
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.karensarmiento.collaborationapp.evaluation.Test
+import com.karensarmiento.collaborationapp.evaluation.TimingMeasurement
+import kotlinx.android.synthetic.main.card.view.*
+import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
@@ -86,21 +92,14 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun applyBufferedUpdates() {
-        Log.i(TAG, "BLOOP: applyBufferedUpdates called")
-        Log.i(TAG, "Current doc status: ${GroupManager.getDocument(currentGroup)}")
-        Log.i(TAG, "Current docInit status: ${docInits.getPendingUpdates()}")
-        Log.i(TAG, "Current peerMerges status: ${peerMerges.getPendingUpdates()}")
-        Log.i(TAG, "Current peerUpdates status: ${peerUpdates.getPendingUpdates()}")
         // TODO: We now remove the pending update from buffer once we are sure that the update has occurred.
         // We need to makes sure therefore that we do not attempt to apply the update more than once by
         // associating each update with a mutex
         // What if we remove it straight away. Then add it back on if failed.
         while (docInits.hasPendingUpdates()) {
             for (docInit in docInits.popPendingUpdates()) {
-                Log.i(TAG, "Got inits: $docInit")
                 val document = GroupManager.getDocument(docInit.groupName)
                 if (document == Jk.WAITING_FOR_SELF.text) {
-                    Log.i(TAG, "BLOOP: applying docInit for group ${docInit.groupName}")
                     automerge.createNewDocument(docInit.groupName)
                 } else {
                     Log.w(TAG, "Got a pending doc init for group ${docInit.groupName} but " +
@@ -110,10 +109,8 @@ class MainActivity : AppCompatActivity() {
         }
         while (peerMerges.hasPendingUpdates()) {
             for (peerMerge in peerMerges.popPendingUpdates()) {
-                Log.i(TAG, "Got peerMerges: $peerMerges")
                 val document = GroupManager.getDocument(peerMerge.groupName)
                 if (document == Jk.WAITING_FOR_PEER.text) {
-                    Log.i(TAG, "BLOOP: applying peer merge for group ${peerMerge.groupName}")
                     automerge.mergeNewDocument(peerMerge.groupName, peerMerge.update) {
 
                     }
@@ -125,18 +122,54 @@ class MainActivity : AppCompatActivity() {
         }
         if (peerUpdates.hasPendingUpdates()) {
             for (pendingUpdate in peerUpdates.popPendingUpdates()) {
-                Log.i(TAG, "Got peerUpdates: $peerUpdates")
                 val document = GroupManager.getDocument(pendingUpdate.groupName)
                 if (document != Jk.WAITING_FOR_PEER.text && document != Jk.WAITING_FOR_SELF.text) {
-                    Log.i(TAG, "BLOOP: applying peer update for group ${pendingUpdate.groupName}")
-                    automerge.applyJsonUpdate(pendingUpdate.groupName, pendingUpdate.update)
+                    automerge.applyJsonUpdate(pendingUpdate.groupName, pendingUpdate.update) {
+                        storeMeasurements()
+                        if (Build.VERSION.RELEASE == "9") {
+
+                            if (Test.count < 3) {
+                                Test.currMeasurement = TimingMeasurement()
+
+                                val checkbox = layout_todos.getChildAt(0).card_view.rel_layout.checkbox
+                                checkbox.isChecked = false
+                                onCheckboxClicked(checkbox)
+                            }
+                            Test.count++
+                        } else {
+                            val checkbox = layout_todos.getChildAt(0).card_view.rel_layout.checkbox
+                            checkbox.isChecked = true
+                            onCheckboxClicked(checkbox)
+                        }
+
+                    }
+                    Log.i(TAG, "Applying peer update for group ${pendingUpdate.groupName}")
                 } else {
-                    Log.i(TAG, "BLOOP: Could not apply peer update for group " +
+                    Log.i(TAG, "Could not apply peer update for group " +
                             "${pendingUpdate.groupName} since their document is in state $document")
                     peerUpdates.pushUpdate(pendingUpdate)
                 }
             }
         }
+    }
+
+    private fun storeMeasurements() {
+        val data = "${Test.currMeasurement.decryptStart}," +
+                "${Test.currMeasurement.localMergeFromKotlinStart}," +
+                "${Test.currMeasurement.localMergeFromKotlinEnd}," +
+                "${Test.currMeasurement.encryptStart}," +
+                "${Test.currMeasurement.encryptEnd}," +
+                "${Test.currMeasurement.sendMessage}," +
+                "${Test.currMeasurement.receiveMessage}," +
+                "${Test.currMeasurement.peerMergeFromKotlinStart}," +
+                "${Test.currMeasurement.peerMergeFromKotlinEnd}\n"
+        Log.i(TAG, "*TEST ${Test.count}: $data")
+
+        val path = "${Environment.getExternalStorageDirectory()}/eval_measurements.txt"
+        Log.i(TAG, "Path = $path")
+        val file = File(path)
+        file.appendText(data)
+        Log.i(TAG,file.readText())
     }
 
     private fun setUpAutomerge(callback: ((Unit) -> Unit)? = null) {
@@ -150,8 +183,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpButtonListeners() {
         todo_entry_box.button_add_todo.setOnClickListener {
-            applyBufferedUpdates()
-
             val todoText = todo_entry_box.text_entry.text.toString()
             automerge.addCard(currentGroup, Card(todoText, false)) {
                 FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
@@ -161,9 +192,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onCheckboxClicked(view: View) {
+        Test.currMeasurement.start = System.currentTimeMillis()
         if (view is CheckBox) {
-            applyBufferedUpdates()
-
             val index = layout_todos.indexOfChild(view.parent.parent.parent as ViewGroup)
             automerge.setCardCompleted(currentGroup, index, view.isChecked) {
                 FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
@@ -194,7 +224,6 @@ class MainActivity : AppCompatActivity() {
             // Set delete button listener.
             val deleteButton = view.findViewById<ImageButton>(R.id.button_delete)
             deleteButton.setOnClickListener {
-                applyBufferedUpdates()
                 val index = layout_todos.indexOfChild(view as ViewGroup)
                 automerge.removeCard(currentGroup, index) {
                     FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)

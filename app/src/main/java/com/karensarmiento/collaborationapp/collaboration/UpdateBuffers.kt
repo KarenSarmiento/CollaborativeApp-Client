@@ -14,7 +14,6 @@ class UpdateBuffer {
     fun pushUpdate(groupName: String, update: String) {
         val updateId = AccountUtils.getUniqueId()
         pendingUpdates[updateId] = PendingUpdate(groupName, update, updateId)
-        Log.i(TAG, "UPDATE IS BEING PUSHED. Updates = $pendingUpdates")
     }
 
     fun pushUpdate(pendingUpdate: PendingUpdate) {
