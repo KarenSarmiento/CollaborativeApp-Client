@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var automerge: Automerge
     private lateinit var jsonUpdateListener: BroadcastReceiver
     private lateinit var currentGroup: String
+    private val evalFile = File("${Environment.getExternalStorageDirectory()}/eval_measurements.txt")
+    private val NUM_RUNS = 10
 
     companion object {
         private const val TAG = "MainActivity"
@@ -130,7 +132,7 @@ class MainActivity : AppCompatActivity() {
                         if (Build.VERSION.RELEASE == "9") { // SAMSUNG
                             // Store measurements
                             storeMeasurements()
-                            if (Test.count < 3) {
+                            if (Test.count < NUM_RUNS) {
                                 resetDocAndUI()
                                 // Reset test result holder
                                 Test.currMeasurement = TimingMeasurement()
@@ -140,7 +142,6 @@ class MainActivity : AppCompatActivity() {
                             Test.count++
                         } else { // HUAWEI
                             testingAddCard {
-                                storeMeasurements()
                                 resetDocAndUI()
                             }
                         }
@@ -155,21 +156,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun storeMeasurements() {
-        val data = "${Test.currMeasurement.decryptStart}," +
+        val data = "${Test.currMeasurement.start}," +
                 "${Test.currMeasurement.localMergeFromKotlinStart}," +
                 "${Test.currMeasurement.localMergeFromKotlinEnd}," +
                 "${Test.currMeasurement.encryptStart}," +
                 "${Test.currMeasurement.encryptEnd}," +
                 "${Test.currMeasurement.sendMessage}," +
                 "${Test.currMeasurement.receiveMessage}," +
+                "${Test.currMeasurement.decryptStart}," +
+                "${Test.currMeasurement.decryptEnd}," +
                 "${Test.currMeasurement.peerMergeFromKotlinStart}," +
                 "${Test.currMeasurement.peerMergeFromKotlinEnd}\n"
         Log.i(TAG, "*TEST ${Test.count}: $data")
-
-        val path = "${Environment.getExternalStorageDirectory()}/eval_measurements.txt"
-        val file = File(path)
-        file.appendText(data)
-        Log.i(TAG,file.readText())
+        evalFile.appendText(data)
     }
 
 
@@ -189,7 +188,6 @@ class MainActivity : AppCompatActivity() {
         // Update UI
         runOnUiThread { updateCards(emptyList()) }
     }
-
 
     //==========================================================================================
 
