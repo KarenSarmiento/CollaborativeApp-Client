@@ -94,6 +94,11 @@ object EncryptionManager {
      *  RSA encryption
      */
 
+    fun getPrivateKey(): PrivateKey {
+        return personalKeys.private
+    }
+
+
     fun getPublicKeyAsString(): String {
         return keyAsString(personalKeys.public)
     }
@@ -184,6 +189,16 @@ object EncryptionManager {
         return String(Base64.encode(encryptedBytes, Base64.DEFAULT))
     }
 
+    fun createDigitalSignature(plaintext: String, privateKey: PrivateKey): String {
+        // Get an RSA cipher object and print the provider.
+        val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, privateKey)
+
+        // Encrypt the plaintext and return as string.
+        val encryptedBytes = cipher.doFinal(plaintext.toByteArray(charset("UTF-8")))
+        return String(Base64.encode(encryptedBytes, Base64.DEFAULT))
+    }
+
 
     private fun decryptFromKeyRSA(ciphertext: String, privateKey: PrivateKey): String {
         // Get an RSA cipher object and print the provider
@@ -207,5 +222,12 @@ object EncryptionManager {
     fun stringToKeyAESGCM(key: String): SecretKey {
         val decodedKey = Base64.decode(key, Base64.DEFAULT)
         return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
+    }
+
+    fun sha256(plaintext: String): String {
+        val bytes = plaintext.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("", { str, it -> str + "%02x".format(it) })
     }
 }

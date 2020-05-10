@@ -57,7 +57,7 @@ object FirebaseMessageSendingService {
 
         // Send request to server.
         val messageId = AccountUtils.getUniqueId()
-        sendEncryptedServerRequest(request, messageId)
+        sendEncryptedServerRequest(request, messageId, signature = false)
         Log.i(TAG, "Sent register public key request to server: $messageId")
     }
 
@@ -148,31 +148,6 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent remove peer from group request to server: $messageId")
     }
 
-    private fun sendEncryptedServerRequest(request: String, messageId: String) {
-        // Encrypt request.
-        val aesKey = EncryptionManager.generateKeyAESGCM()
-        val encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
-        val aesKeyString = EncryptionManager.keyAsString(aesKey)
-        val encryptedKey = EncryptionManager.maybeEncryptRSA(aesKeyString, EncryptionManager.FB_SERVER_PUBLIC_KEY)
-        if (encryptedKey == null) {
-            Log.e(TAG, "Could not encrypt request. Will not send message.")
-            return
-        }
-        Test.currMeasurement.encryptEnd = System.currentTimeMillis()
-
-        // Send encrypted request.
-        FirebaseMessaging.getInstance().send(
-            RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
-                .setMessageId(messageId)
-                .setTtl(TTL)
-                .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
-                .addData(Jk.ENC_KEY.text, encryptedKey)
-                //TODO: Change identifier to from email something non public e.g. random gen string associated with email.
-                .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
-                .build())
-        Test.currMeasurement.sendMessage = System.currentTimeMillis()
-    }
-
     private fun sendEncryptedPeerMessage(request: String, peerEmail: String, messageId: String) {
         // Encrypt request.
         val peerKey = AddressBook.getContactKey(peerEmail) ?: return
@@ -196,5 +171,45 @@ object FirebaseMessageSendingService {
 
         // Send request to server.
         sendEncryptedServerRequest(forwardToPeerRequest, messageId)
+    }
+
+    private fun sendEncryptedServerRequest(request: String, messageId: String, signature: Boolean = true) {
+        // Encrypt request.
+        val aesKey = EncryptionManager.generateKeyAESGCM()
+        val encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
+        val aesKeyString = EncryptionManager.keyAsString(aesKey)
+        val encryptedKey = EncryptionManager.maybeEncryptRSA(aesKeyString, EncryptionManager.FB_SERVER_PUBLIC_KEY)
+        if (encryptedKey == null) {
+            Log.e(TAG, "Could not encrypt request. Will not send message.")
+            return
+        }
+
+        // Send encrypted request with or without digital signature.
+        if (signature) {
+            val messageHash = EncryptionManager.sha256(encryptedRequest)
+            val signature = EncryptionManager.createDigitalSignature(
+                messageHash, EncryptionManager.getPrivateKey())
+            Test.currMeasurement.encryptEnd = System.currentTimeMillis()
+
+            FirebaseMessaging.getInstance().send(
+                RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
+                    .setMessageId(messageId)
+                    .setTtl(TTL)
+                    .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
+                    .addData(Jk.ENC_KEY.text, encryptedKey)
+                    .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
+                    .addData(Jk.SIGNATURE.text, signature)
+                    .build())
+        } else {
+            FirebaseMessaging.getInstance().send(
+                RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
+                    .setMessageId(messageId)
+                    .setTtl(TTL)
+                    .addData(Jk.ENC_MESSAGE.text, encryptedRequest)
+                    .addData(Jk.ENC_KEY.text, encryptedKey)
+                    .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
+                    .build())
+        }
+        Test.currMeasurement.sendMessage = System.currentTimeMillis()
     }
 }

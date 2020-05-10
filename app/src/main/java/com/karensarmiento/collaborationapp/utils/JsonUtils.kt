@@ -17,6 +17,7 @@ enum class JsonKeyword(val text: String) {
     REQUEST_ID("request_id"),
     ENC_MESSAGE("enc_message"),
     ENC_KEY("enc_key"),
+    SIGNATURE("signature"),
 
     // Registering public keys.
     REGISTER_PUBLIC_KEY("register_public_key"),
