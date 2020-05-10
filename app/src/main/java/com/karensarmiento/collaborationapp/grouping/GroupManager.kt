@@ -60,7 +60,7 @@ object GroupManager {
             Log.e(TAG, "Cannot set document for group $groupName since this group does not exist.")
             return
         }
-        groups[groupName]!!.document = document
+        groups[groupName]!!.document = document.removeSurrounding("\"").replace("\\\"", "\"")
     }
 
     fun getAllRegisteredGroups(): MutableSet<String> {

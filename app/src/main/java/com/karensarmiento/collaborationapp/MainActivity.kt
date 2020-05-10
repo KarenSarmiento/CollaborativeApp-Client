@@ -183,7 +183,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun resetDocAndUI() {
         // Set document as empty.
-        GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!)
+        GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!.removeSurrounding("\""))
 
         // Update UI
         runOnUiThread { updateCards(emptyList()) }

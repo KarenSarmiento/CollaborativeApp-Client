@@ -18,7 +18,7 @@ let createNewTodoList = function() {
 
 let mergeNewDocument = function(docToMerge) {
     // Load doc.
-    let docToMergeDecoded = decodeURIComponent(docToMerge)
+    let docToMergeDecoded = atob(docToMerge)
 
     // Merge and return
     let newDoc = Automerge.merge(Automerge.init(), Automerge.load(docToMergeDecoded))
@@ -27,16 +27,14 @@ let mergeNewDocument = function(docToMerge) {
 
 let applyJsonUpdate = function(docPersisted, changes) {
     // Load doc.
-    let docDecoded = decodeURIComponent(docPersisted)
+    let docDecoded = atob(docPersisted)
     let docLoaded = Automerge.load(docDecoded)
     
     // Parse changes.
-    let changesDecoded = decodeURIComponent(changes)
+    let changesDecoded = atob(changes)
     let changesParsed = JSON.parse(changesDecoded)
-
     // Apply changes.
     let updatedDoc = Automerge.applyChanges(docLoaded, changesParsed)
-
     // Return new doc.
     log("> " + JSON.stringify(updatedDoc.cards))
     ktchannel.onCardsChange(JSON.stringify(updatedDoc.cards))
@@ -44,10 +42,8 @@ let applyJsonUpdate = function(docPersisted, changes) {
 }
 
 let applyLocalChange = function(eventName, docPersisted, changeLambda) {
-//    ktchannel.startEvent(eventName)
-
     // Load doc.
-    let docPersistedDecoded = decodeURIComponent(docPersisted)
+    let docPersistedDecoded = atob(docPersisted)
     let doc = Automerge.load(docPersistedDecoded)
 
     // Apply change.
@@ -56,18 +52,15 @@ let applyLocalChange = function(eventName, docPersisted, changeLambda) {
 
     // Return new doc.
     let newDocPersisted = Automerge.save(newDoc)
-
-    log("> " + JSON.stringify(newDoc.cards))
     ktchannel.onCardsChange(JSON.stringify(newDoc.cards))
-//    ktchannel.endEvent(eventName)
-
     return {[CHANGES]:changes, [UPDATED_DOC]: newDocPersisted}
 }
 
 let addCard = function (docPersisted, title, completed) {
+    let titleDecoded = atob(title)
     let eventName = "automerge_addCard"
     let changeLambda = it => {
-            it.cards.push({ title: title, completed:completed })
+            it.cards.push({ title: titleDecoded, completed:completed })
         }
     return applyLocalChange(eventName, docPersisted, changeLambda)
 }

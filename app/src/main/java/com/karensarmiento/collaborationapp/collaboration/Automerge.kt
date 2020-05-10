@@ -47,11 +47,12 @@ internal class Automerge(
      * accessed through the use of a functional callback.
      */ // TODO: Ensure that a document is not edited concurrently. CREATE LOCK ON WEBVIEW?
     fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
-        val document = GroupManager.getDocument(groupName)
-        // TODO: Protect against javascript injection.
         Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
+        val document = GroupManager.getDocument(groupName)!!
+        val docEncoded = AndroidUtils.base64(document)
+        val titleEncoded = AndroidUtils.base64(card.title)
         webview.evaluateJavascript(
-            "javascript:addCard(encodeURIComponent(\"$document\"), \"${card.title}\", ${card.completed});") {
+            "javascript:addCard(\"$docEncoded\", \"$titleEncoded\", ${card.completed});") {
             Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
             handleUpdateOutput(it, groupName, callback)
         }
@@ -59,25 +60,29 @@ internal class Automerge(
 
 
     fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
-        val document = GroupManager.getDocument(groupName)
-        webview.evaluateJavascript("javascript:removeCard(encodeURIComponent(\"$document\"), \"${index}\");") {
+        val document = GroupManager.getDocument(groupName)!!
+        val docEncoded = AndroidUtils.base64(document)
+        webview.evaluateJavascript("javascript:removeCard(\"$docEncoded\", \"${index}\");") {
             handleUpdateOutput(it, groupName, callback)
         }
     }
 
 
     fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
-        val document = GroupManager.getDocument(groupName)
+        val document = GroupManager.getDocument(groupName)!!
+        val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript(
-            "javascript:setCardCompleted(encodeURIComponent(\"$document\"), \"${index}\", ${completed});") {
+            "javascript:setCardCompleted(\"$docEncoded\", \"${index}\", ${completed});") {
             handleUpdateOutput(it, groupName, callback)
         }
     }
 
     fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
-        val document = GroupManager.getDocument(groupName)
         Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
-        webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), encodeURIComponent(\"$jsonUpdate\"));") {
+        val document = GroupManager.getDocument(groupName)!!
+        val docEncoded = AndroidUtils.base64(document)
+        val updateEncoded = AndroidUtils.base64(jsonUpdate)
+        webview.evaluateJavascript("javascript:applyJsonUpdate(\"$docEncoded\", \"$updateEncoded\");") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
@@ -101,7 +106,8 @@ internal class Automerge(
     }
 
     fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
-        webview.evaluateJavascript("javascript:mergeNewDocument(encodeURIComponent(\"$docToMerge\"));") {
+        val docEncoded = AndroidUtils.base64(docToMerge)
+        webview.evaluateJavascript("javascript:mergeNewDocument(\"$docEncoded\");") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
@@ -116,9 +122,8 @@ internal class Automerge(
         val changes = getJsonArrayOrNull(responseJson, Jk.CHANGES.text)
         val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
 
-        GroupManager.setDocument(groupName, escapePunctuation(updatedDoc!!))
-        print(escapePunctuation(updatedDoc!!))
-        callback?.invoke(escapePunctuation(changes!!.toString()))
+        GroupManager.setDocument(groupName, updatedDoc!!)
+        callback?.invoke(changes!!.toString())
     }
 
     /**

@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.util.Base64
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 
@@ -30,5 +31,9 @@ object AndroidUtils {
         val intentFilter = IntentFilter(filter)
         context.registerReceiver(listener, intentFilter)
         return listener
+    }
+
+    fun base64(string: String): String {
+        return String(Base64.encode(string.toByteArray(), Base64.DEFAULT)).replace("\n", "")
     }
 }
