@@ -94,11 +94,6 @@ object EncryptionManager {
      *  RSA encryption
      */
 
-    fun getPrivateKey(): PrivateKey {
-        return personalKeys.private
-    }
-
-
     fun getPublicKeyAsString(): String {
         return keyAsString(personalKeys.public)
     }
@@ -235,7 +230,7 @@ object EncryptionManager {
 
     fun createDigitalSignature(message: String): String {
         val messageHash = sha256(message)
-        return encryptDigitalSignature(messageHash, getPrivateKey())
+        return encryptDigitalSignature(messageHash, personalKeys.private)
     }
 
     fun authenticateSignature(signature: String, message: String, senderPublicKey: String) : Boolean {

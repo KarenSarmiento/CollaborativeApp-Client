@@ -40,8 +40,13 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Received message!")
             Test.currMeasurement.decryptStart = System.currentTimeMillis()
-            val encryptedKey = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_KEY.text) ?: return
+            // Authenticate Message as having come from the genuine server.
             val encryptedMessage = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_MESSAGE.text) ?: return
+            val signature = getStringOrNullFromMap(remoteMessage.data, Jk.SIGNATURE.text) ?: return
+            if (!EncryptionManager.authenticateSignature(signature, encryptedMessage, EncryptionManager.FB_SERVER_PUBLIC_KEY)) return
+
+            // Decrypt Message
+            val encryptedKey = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_KEY.text) ?: return
             val decryptedMessage = getDecryptedMessage(encryptedKey, encryptedMessage)
             if (decryptedMessage == null) {
                 Log.e(TAG, "Could not decrypt message with id ${remoteMessage.messageId}." +
