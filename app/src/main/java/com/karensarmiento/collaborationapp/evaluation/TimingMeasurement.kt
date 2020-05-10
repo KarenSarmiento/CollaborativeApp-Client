@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.evaluation
 object Test {
     var count = 0
     var currMeasurement = TimingMeasurement()
+    var initDoc : String? = null
 }
 
 class TimingMeasurement(

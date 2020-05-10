@@ -25,19 +25,6 @@ let mergeNewDocument = function(docToMerge) {
     return Automerge.save(newDoc)
 }
 
-let testing = function(docPersisted, changes) {
-    // Load doc.
-    let docDecoded = decodeURIComponent(docPersisted)
-    let docLoaded = Automerge.load(docDecoded)
-    
-    // Parse changes.
-    let changesDecoded = decodeURIComponent(changes)
-    
-    console.log("~ Changes = %s", changesDecoded)
-    console.log("~ docLoaded = %s", docLoaded)
-    return changes
-}
-
 let applyJsonUpdate = function(docPersisted, changes) {
     // Load doc.
     let docDecoded = decodeURIComponent(docPersisted)
@@ -57,7 +44,7 @@ let applyJsonUpdate = function(docPersisted, changes) {
 }
 
 let applyLocalChange = function(eventName, docPersisted, changeLambda) {
-    ktchannel.startEvent(eventName)
+//    ktchannel.startEvent(eventName)
 
     // Load doc.
     let docPersistedDecoded = decodeURIComponent(docPersisted)
@@ -72,7 +59,7 @@ let applyLocalChange = function(eventName, docPersisted, changeLambda) {
 
     log("> " + JSON.stringify(newDoc.cards))
     ktchannel.onCardsChange(JSON.stringify(newDoc.cards))
-    ktchannel.endEvent(eventName)
+//    ktchannel.endEvent(eventName)
 
     return {[CHANGES]:changes, [UPDATED_DOC]: newDocPersisted}
 }

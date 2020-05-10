@@ -28,7 +28,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.evaluation.TimingMeasurement
-import kotlinx.android.synthetic.main.card.view.*
 import java.io.File
 
 
@@ -100,7 +99,9 @@ class MainActivity : AppCompatActivity() {
             for (docInit in docInits.popPendingUpdates()) {
                 val document = GroupManager.getDocument(docInit.groupName)
                 if (document == Jk.WAITING_FOR_SELF.text) {
-                    automerge.createNewDocument(docInit.groupName)
+                    automerge.createNewDocument(docInit, docInit.groupName) {
+                        Test.initDoc = it.removeSurrounding("\"")
+                    }
                 } else {
                     Log.w(TAG, "Got a pending doc init for group ${docInit.groupName} but " +
                             "this group's document was in state: $document. Will drop.")
@@ -111,11 +112,11 @@ class MainActivity : AppCompatActivity() {
             for (peerMerge in peerMerges.popPendingUpdates()) {
                 val document = GroupManager.getDocument(peerMerge.groupName)
                 if (document == Jk.WAITING_FOR_PEER.text) {
-                    automerge.mergeNewDocument(peerMerge.groupName, peerMerge.update) {
-
+                    automerge.mergeNewDocument(peerMerge, peerMerge.groupName, peerMerge.update) {
+                        Test.initDoc = it.removeSurrounding("\"")
                     }
                 } else {
-                    Log.w(TAG, "Got a pending update for group ${peerMerge.groupName} but " +
+                    Log.w(TAG, "Got a pending peer merge for group ${peerMerge.groupName} but " +
                             "this group's document was in state: $document. Will drop.")
                 }
             }
@@ -124,26 +125,26 @@ class MainActivity : AppCompatActivity() {
             for (pendingUpdate in peerUpdates.popPendingUpdates()) {
                 val document = GroupManager.getDocument(pendingUpdate.groupName)
                 if (document != Jk.WAITING_FOR_PEER.text && document != Jk.WAITING_FOR_SELF.text) {
-                    automerge.applyJsonUpdate(pendingUpdate.groupName, pendingUpdate.update) {
-                        storeMeasurements()
-                        if (Build.VERSION.RELEASE == "9") {
+                    automerge.applyJsonUpdate(pendingUpdate, pendingUpdate.groupName, pendingUpdate.update) {
 
+                        if (Build.VERSION.RELEASE == "9") { // SAMSUNG
+                            // Store measurements
+                            storeMeasurements()
                             if (Test.count < 3) {
+                                resetDocAndUI()
+                                // Reset test result holder
                                 Test.currMeasurement = TimingMeasurement()
-
-                                val checkbox = layout_todos.getChildAt(0).card_view.rel_layout.checkbox
-                                checkbox.isChecked = false
-                                onCheckboxClicked(checkbox)
+                                // Add new card to initiate next test.
+                                testingAddCard()
                             }
                             Test.count++
-                        } else {
-                            val checkbox = layout_todos.getChildAt(0).card_view.rel_layout.checkbox
-                            checkbox.isChecked = true
-                            onCheckboxClicked(checkbox)
+                        } else { // HUAWEI
+                            testingAddCard {
+                                storeMeasurements()
+                                resetDocAndUI()
+                            }
                         }
-
                     }
-                    Log.i(TAG, "Applying peer update for group ${pendingUpdate.groupName}")
                 } else {
                     Log.i(TAG, "Could not apply peer update for group " +
                             "${pendingUpdate.groupName} since their document is in state $document")
@@ -166,11 +167,31 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "*TEST ${Test.count}: $data")
 
         val path = "${Environment.getExternalStorageDirectory()}/eval_measurements.txt"
-        Log.i(TAG, "Path = $path")
         val file = File(path)
         file.appendText(data)
         Log.i(TAG,file.readText())
     }
+
+
+    private fun testingAddCard(todoText: String = "", callback: ((Unit) -> Unit)? = null) {
+        Test.currMeasurement.start = System.currentTimeMillis()
+        automerge.addCard(currentGroup, Card(todoText, false)) {
+            FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
+            callback?.invoke(Unit)
+        }
+        todo_entry_box.text_entry.setText("")
+    }
+
+    private fun resetDocAndUI() {
+        // Set document as empty.
+        GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!)
+
+        // Update UI
+        runOnUiThread { updateCards(emptyList()) }
+    }
+
+
+    //==========================================================================================
 
     private fun setUpAutomerge(callback: ((Unit) -> Unit)? = null) {
         // The callback will by default be called by a BG thread; therefore we need to dispatch it

@@ -49,8 +49,10 @@ internal class Automerge(
     fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
         // TODO: Protect against javascript injection.
+        Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         webview.evaluateJavascript(
             "javascript:addCard(encodeURIComponent(\"$document\"), \"${card.title}\", ${card.completed});") {
+            Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
             handleUpdateOutput(it, groupName, callback)
         }
     }
@@ -66,15 +68,13 @@ internal class Automerge(
 
     fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
-        Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         webview.evaluateJavascript(
             "javascript:setCardCompleted(encodeURIComponent(\"$document\"), \"${index}\", ${completed});") {
-            Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
             handleUpdateOutput(it, groupName, callback)
         }
     }
 
-    fun applyJsonUpdate(groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
+    fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)
         Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
         webview.evaluateJavascript("javascript:applyJsonUpdate(encodeURIComponent(\"$document\"), encodeURIComponent(\"$jsonUpdate\"));") {
@@ -82,28 +82,31 @@ internal class Automerge(
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
                 callback?.invoke(it)
+            } else {
+                peerUpdates.pushUpdate(update)
             }
         }
     }
 
 
-    fun createNewDocument(groupName: String, callback: ((String) -> Unit)? = null)  {
+    fun createNewDocument(update: PendingUpdate, groupName: String, callback: ((String) -> Unit)? = null)  {
         webview.evaluateJavascript("javascript:createNewTodoList();") {
-            Log.i(TAG, "BLOOP: CreateNewDocumentCalled!")
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
+            } else {
+                docInits.pushUpdate(update)
             }
         }
     }
 
-    fun mergeNewDocument(groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
-        Log.i(TAG, "BLOOP: mergeNewDocument called")
+    fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
         webview.evaluateJavascript("javascript:mergeNewDocument(encodeURIComponent(\"$docToMerge\"));") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
-                Log.i(TAG, "BLOOP: Merging new document to get ${it.removeSurrounding("\"")}")
+            } else {
+                peerMerges.pushUpdate(update)
             }
         }
     }

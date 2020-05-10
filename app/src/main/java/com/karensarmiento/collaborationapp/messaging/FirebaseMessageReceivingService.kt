@@ -123,9 +123,8 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val document = getStringOrNull(message, Jk.DOCUMENT.text) ?: return
 
         val groupName = GroupManager.groupName(groupId) ?: return
-        GroupManager.setDocument(groupName, document)
         peerMerges.pushUpdate(groupName, document)
-        broadcastIntent(Jk.DOCUMENT_INIT.text, groupName)
+        broadcastIntent(Jk.GROUP_MESSAGE.text, groupName)
         Log.i(TAG , "Handling document init message for group $groupName to buffer.")
     }
 
