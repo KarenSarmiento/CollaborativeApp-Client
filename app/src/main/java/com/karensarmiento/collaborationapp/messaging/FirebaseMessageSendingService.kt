@@ -161,12 +161,15 @@ object FirebaseMessageSendingService {
         }
 
         // Create request.
+        val signature = EncryptionManager.createDigitalSignature(encryptedRequest)
         val forwardToPeerRequest = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_PEER.text)
             .add(Jk.PEER_EMAIL.text, peerEmail)
             .add(Jk.PEER_MESSAGE.text, Json.createObjectBuilder()
                 .add(Jk.ENC_MESSAGE.text, encryptedRequest)
-                .add(Jk.ENC_KEY.text, encryptedKey))
+                .add(Jk.ENC_KEY.text, encryptedKey)
+                .add(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
+                .add(Jk.SIGNATURE.text, signature))
             .build().toString()
 
         // Send request to server.
@@ -186,11 +189,9 @@ object FirebaseMessageSendingService {
 
         // Send encrypted request with or without digital signature.
         if (signature) {
-            val messageHash = EncryptionManager.sha256(encryptedRequest)
-            val signature = EncryptionManager.createDigitalSignature(
-                messageHash, EncryptionManager.getPrivateKey())
             Test.currMeasurement.encryptEnd = System.currentTimeMillis()
 
+            val signature = EncryptionManager.createDigitalSignature(encryptedRequest)
             FirebaseMessaging.getInstance().send(
                 RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
                     .setMessageId(messageId)

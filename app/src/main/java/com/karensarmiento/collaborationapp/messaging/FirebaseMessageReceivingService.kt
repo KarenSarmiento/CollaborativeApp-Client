@@ -95,10 +95,17 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  Handles updates sent from peers.
      */
     private fun handleForwardToPeerMessage(message: JsonObject) {
-        // Decrypt message using private key.
+        // Authenticate the message
+        Log.i(TAG, "handling message: $message")
         val peerMessage = getJsonObjectOrNull(message, Jk.PEER_MESSAGE.text) ?: return
-        val encryptedKey = getStringOrNull(peerMessage, Jk.ENC_KEY.text) ?: return
         val encryptedMessage = getStringOrNull(peerMessage, Jk.ENC_MESSAGE.text) ?: return
+        val senderEmail = getStringOrNull(peerMessage, Jk.EMAIL.text) ?: return
+        val signature = getStringOrNull(peerMessage, Jk.SIGNATURE.text) ?: return
+        val senderPublicKey = AddressBook.getContactKey(senderEmail) ?: return
+        if (!EncryptionManager.authenticateSignature(signature, encryptedMessage, senderPublicKey)) return
+
+        // Decrypt message using private key.
+        val encryptedKey = getStringOrNull(peerMessage, Jk.ENC_KEY.text) ?: return
         val decryptedPeerMessage = getDecryptedMessage(encryptedKey, encryptedMessage)
         if (decryptedPeerMessage == null) {
             Log.e(TAG, "Could not decrypt peer message. Will ignore it.")
