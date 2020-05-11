@@ -170,23 +170,31 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      */
     private fun handleJsonUpdateMessage(message: JsonObject) {
         Log.i(TAG, "Handling Json Update Message.")
-        val groupMessage = getStringOrNull(message, Jk.GROUP_MESSAGE.text) ?: return
-        val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
 
-        // Decrypt the message
+        // Authenticate message.
+        val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
         val groupName = GroupManager.groupName(groupId)
         if (groupName == null) {
             Log.e(TAG, "Could not decrypt message since we do not own a group under the id" +
                     groupId)
             return
         }
+        val groupMessage = getJsonObjectOrNull(message, Jk.GROUP_MESSAGE.text) ?: return
+        val encryptedMessage = getStringOrNull(groupMessage, Jk.ENC_MESSAGE.text) ?: return
+        val email = getStringOrNull(groupMessage, Jk.EMAIL.text) ?: return
+        val signature = getStringOrNull(groupMessage, Jk.SIGNATURE.text) ?: return
+        if (!GroupManager.isMember(groupName, email)) return
+        val senderPublicKey = AddressBook.getContactKey(email) ?: return
+        if (!EncryptionManager.authenticateSignature(signature, encryptedMessage, senderPublicKey)) return
+
+        // Decrypt the message
         val groupKey = GroupManager.getGroupKey(groupName)
         if (groupKey == null) {
             Log.e(TAG, "Could not decrypt message since we do not own a group key for" +
                     "group $groupId. Will drop packet.")
             return
         }
-        val decryptedUpdate = EncryptionManager.decryptAESGCM(groupMessage, groupKey)
+        val decryptedUpdate = EncryptionManager.decryptAESGCM(encryptedMessage, groupKey)
         Test.currMeasurement.decryptEnd = System.currentTimeMillis()
         // Apply the update.
         peerUpdates.pushUpdate(groupName, decryptedUpdate)

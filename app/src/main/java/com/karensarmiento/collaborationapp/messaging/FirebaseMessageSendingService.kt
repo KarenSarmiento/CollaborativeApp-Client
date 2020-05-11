@@ -72,16 +72,20 @@ object FirebaseMessageSendingService {
 
     private fun sendJsonUpdateToDeviceGroup(groupName: String, jsonUpdate: String) {
         Test.currMeasurement.encryptStart = System.currentTimeMillis()
-        // Encrypt JSON update.
+        // Encrypt json update and create digital signature.
         val groupKey = GroupManager.getCurrentGroupKey() ?: return
         val encryptedUpdate = EncryptionManager.encryptAESGCM(jsonUpdate, groupKey)
+        val signature = EncryptionManager.createDigitalSignature(encryptedUpdate)
 
         // Create request.
         val groupToken = GroupManager.groupId(groupName) ?: return
         val request = Json.createObjectBuilder()
             .add(Jk.UPSTREAM_TYPE.text, Jk.FORWARD_TO_GROUP.text)
             .add(Jk.GROUP_ID.text, groupToken)
-            .add(Jk.GROUP_MESSAGE.text, encryptedUpdate)
+            .add(Jk.GROUP_MESSAGE.text, Json.createObjectBuilder()
+                .add(Jk.ENC_MESSAGE.text, encryptedUpdate)
+                .add(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
+                .add(Jk.SIGNATURE.text, signature))
             .build().toString()
 
         // Send request to server.

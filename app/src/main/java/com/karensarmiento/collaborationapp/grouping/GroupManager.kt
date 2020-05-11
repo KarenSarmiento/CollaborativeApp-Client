@@ -116,6 +116,18 @@ object GroupManager {
         }
         groups[groupName]!!.members.remove(peerEmail)
     }
+
+    fun isMember(groupName: String, email: String): Boolean {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Group with name $groupName does not exist.")
+            return false
+        }
+        val member = email in groups[groupName]!!.members
+        if (!member) {
+            Log.i(TAG, "$email is not a member of group $groupName.")
+        }
+        return member
+    }
 }
 
 /**
