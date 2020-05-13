@@ -22,20 +22,8 @@ let mergeNewDocument = function(docToMerge) {
 
     // Merge and return
     let newDoc = Automerge.merge(Automerge.init(), Automerge.load(docToMergeDecoded))
+    ktchannel.onCardsChange(JSON.stringify(newDoc.cards))
     return Automerge.save(newDoc)
-}
-
-let getChanges = function(docPersisted, initDoc) {
-    console.log(docPersisted)
-    console.log(initDoc)
-    // Load init doc.
-    let initDecoded = atob(initDoc)
-    let initLoaded = Automerge.load(initDecoded)
-
-    // Load persisted doc.
-    let docDecoded = atob(docPersisted)
-    let docLoaded = Automerge.load(docDecoded)
-    return Automerge.getChanges(initLoaded, docLoaded)
 }
 
 let applyJsonUpdate = function(docPersisted, changes) {

@@ -43,7 +43,7 @@ object GroupManager {
             Log.e(TAG, "Cannot register group with name $groupName since group already exists.")
             return
         }
-        groups[groupName] = GroupData(groupId, memberEmails, key, document, initDocument)
+        groups[groupName] = GroupData(groupId, memberEmails, key, document, initDocument, mutableSetOf())
         Log.i(TAG, "Registered $groupName to groupId $groupId.")
     }
 
@@ -144,6 +144,22 @@ object GroupManager {
         }
         return member
     }
+
+    fun addChange(groupName: String, change: String) {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Group with name $groupName does not exist.")
+            return
+        }
+        groups[groupName]!!.changes.add(change)
+    }
+
+    fun getChanges(groupName: String): MutableSet<String>? {
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Group with name $groupName does not exist.")
+            return null
+        }
+        return groups[groupName]!!.changes
+    }
 }
 
 /**
@@ -152,4 +168,4 @@ object GroupManager {
  *  GroupId is a globally unique identifier for the group.
  */
 data class GroupData(var groupId: String, val members: MutableSet<String>, var key: SecretKey?,
-                     var document: String, var initDocument: String)
+                     var document: String, var initDocument: String,  val changes: MutableSet<String>)

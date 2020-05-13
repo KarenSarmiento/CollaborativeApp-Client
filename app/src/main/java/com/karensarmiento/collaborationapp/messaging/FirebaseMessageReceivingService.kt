@@ -199,6 +199,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         Test.currMeasurement.decryptEnd = System.currentTimeMillis()
         // Apply the update.
         peerUpdates.pushUpdate(groupName, decryptedUpdate)
+        GroupManager.addChange(groupName, decryptedUpdate)
         broadcastIntent(Jk.GROUP_MESSAGE.text, groupName)
     }
 
@@ -256,8 +257,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
                 peerEmail, groupId, EncryptionManager.keyAsString(groupKey))
 
             // Send peer the up to date doc.
-            val document = GroupManager.getDocument(groupName) ?: return
-            FirebaseMessageSendingService.sendDocumentToPeer(peerEmail, groupId, document)
+            FirebaseMessageSendingService.sendHistoryToPeer(peerEmail, groupId)
             broadcastIntent(Jk.ADD_PEER_TO_GROUP.text, groupName)
         } else {
             Log.i(TAG, "Received unsuccessful add peer to group response.")

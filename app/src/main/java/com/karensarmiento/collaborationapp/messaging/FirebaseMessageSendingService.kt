@@ -19,19 +19,23 @@ object FirebaseMessageSendingService {
     private const val TAG = "FirebaseSendingService"
     private const val TTL = 200
 
-    fun sendDocumentToPeer(peerEmail: String, groupId: String, document: String) {
-        // Build message containing symmetric key.
+    fun sendHistoryToPeer(peerEmail: String, groupId: String) {
+        // Send document init to peer.
+        val documentInit = GroupManager.getInitDocument(GroupManager.groupName(groupId)!!) ?: return
         val peerMessage = Json.createObjectBuilder()
             .add(Jk.PEER_TYPE.text, Jk.DOCUMENT_INIT.text)
             .add(Jk.GROUP_ID.text, groupId)
-            .add(Jk.DOCUMENT.text, document)
+            .add(Jk.DOCUMENT.text, documentInit)
             .build().toString()
 
-        // Send encrypted message.
         val messageId = AccountUtils.getUniqueId()
         sendEncryptedPeerMessage(peerMessage, peerEmail, messageId)
+        Log.i(TAG, "Sent document init to peer: $messageId")
 
-        Log.i(TAG, "Sent forward document to peer request to server: $messageId")
+        // Send changes to peers.
+        val changes = GroupManager.getChanges(GroupManager.groupName(groupId)!!)!!
+        changes.forEach { change -> sendJsonUpdateToCurrentDeviceGroup(change) }
+        Log.i(TAG, "Sent document changes to peer.")
     }
 
     fun sendSymmetricKeyToPeer(peerEmail: String, groupId: String, key: String) {
@@ -57,7 +61,7 @@ object FirebaseMessageSendingService {
 
         // Send request to server.
         val messageId = AccountUtils.getUniqueId()
-        sendEncryptedServerRequest(request, messageId, signature = false)
+        sendEncryptedServerRequest(request, messageId, useSignature = false)
         Log.i(TAG, "Sent register public key request to server: $messageId")
     }
 
@@ -180,7 +184,7 @@ object FirebaseMessageSendingService {
         sendEncryptedServerRequest(forwardToPeerRequest, messageId)
     }
 
-    private fun sendEncryptedServerRequest(request: String, messageId: String, signature: Boolean = true) {
+    private fun sendEncryptedServerRequest(request: String, messageId: String, useSignature: Boolean = true) {
         // Encrypt request.
         val aesKey = EncryptionManager.generateKeyAESGCM()
         val encryptedRequest = EncryptionManager.encryptAESGCM(request, aesKey)
@@ -191,8 +195,8 @@ object FirebaseMessageSendingService {
             return
         }
 
-        // Send encrypted request with or without digital signature.
-        if (signature) {
+        // Send encrypted request with or without digital useSignature.
+        if (useSignature) {
             Test.currMeasurement.encryptEnd = System.currentTimeMillis()
 
             val signature = EncryptionManager.createDigitalSignature(encryptedRequest)

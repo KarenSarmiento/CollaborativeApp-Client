@@ -93,59 +93,72 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun applyBufferedUpdates() {
-        // TODO: We now remove the pending update from buffer once we are sure that the update has occurred.
-        // We need to makes sure therefore that we do not attempt to apply the update more than once by
-        // associating each update with a mutex
-        // What if we remove it straight away. Then add it back on if failed.
-        automerge.getChanges(GroupManager.currentGroup!!)
+        handleBufferedDocInits()
+        handleBufferedPeerMerges()
+        handleBufferedPeerUpdates()
+    }
+
+    private fun handleBufferedDocInits() {
         while (docInits.hasPendingUpdates()) {
             for (docInit in docInits.popPendingUpdates()) {
                 val document = GroupManager.getDocument(docInit.groupName)
                 if (document == Jk.WAITING_FOR_SELF.text) {
                     automerge.createNewDocument(docInit, docInit.groupName) {
                         Test.initDoc = it.removeSurrounding("\"")
+                        Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(docInit.groupName)}")
+                        applyBufferedUpdates()
                     }
                 } else {
                     Log.w(TAG, "Got a pending doc init for group ${docInit.groupName} but " +
-                            "this group's document was in state: $document. Will drop.")
+                            "this group's document was in state: $document.")
+                    docInits.pushUpdate(docInit)
                 }
             }
         }
+    }
+
+    private fun handleBufferedPeerMerges() {
         while (peerMerges.hasPendingUpdates()) {
             for (peerMerge in peerMerges.popPendingUpdates()) {
                 val document = GroupManager.getDocument(peerMerge.groupName)
                 if (document == Jk.WAITING_FOR_PEER.text) {
                     automerge.mergeNewDocument(peerMerge, peerMerge.groupName, peerMerge.update) {
                         Test.initDoc = it.removeSurrounding("\"")
+                        Log.i(TAG, "Applied peerMerge! Doc is now ${GroupManager.getDocument(peerMerge.groupName)}")
+                        applyBufferedUpdates()
                     }
                 } else {
                     Log.w(TAG, "Got a pending peer merge for group ${peerMerge.groupName} but " +
-                            "this group's document was in state: $document. Will drop.")
+                            "this group's document was in state: $document.")
+                    peerMerges.pushUpdate(peerMerge)
                 }
             }
         }
+    }
+
+    private fun handleBufferedPeerUpdates() {
         if (peerUpdates.hasPendingUpdates()) {
             for (pendingUpdate in peerUpdates.popPendingUpdates()) {
                 val document = GroupManager.getDocument(pendingUpdate.groupName)
                 if (document != Jk.WAITING_FOR_PEER.text && document != Jk.WAITING_FOR_SELF.text) {
                     automerge.applyJsonUpdate(pendingUpdate, pendingUpdate.groupName, pendingUpdate.update) {
-
-                        if (Build.VERSION.RELEASE == "9") { // SAMSUNG
-                            // Store measurements
-                            storeMeasurements()
-                            if (Test.count < NUM_RUNS) {
-                                resetDocAndUI()
-                                // Reset test result holder
-                                Test.currMeasurement = TimingMeasurement()
-                                // Add new card to initiate next test.
-                                testingAddCard()
-                            }
-                            Test.count++
-                        } else { // HUAWEI
-                            testingAddCard {
-                                resetDocAndUI()
-                            }
-                        }
+//                        if (Build.VERSION.RELEASE == "9") { // SAMSUNG
+//                            // Store measurements
+//                            storeMeasurements()
+//                            if (Test.count < NUM_RUNS) {
+//                                resetDocAndUI()
+//                                // Reset test result holder
+//                                Test.currMeasurement = TimingMeasurement()
+//                                // Add new card to initiate next test.
+//                                testingAddCard()
+//                            }
+//                            Test.count++
+//                        } else { // HUAWEI
+//                            testingAddCard {
+//                                resetDocAndUI()
+//                            }
+//                        }
+                        Log.i(TAG, "Applied pendingUpdate! Doc is now ${GroupManager.getDocument(pendingUpdate.groupName)}")
                     }
                 } else {
                     Log.i(TAG, "Could not apply peer update for group " +

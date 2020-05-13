@@ -11,26 +11,26 @@ private const val TAG = "UpdateBuffer"
 class UpdateBuffer {
     private val pendingUpdates = mutableMapOf<String, PendingUpdate>()
 
-    fun pushUpdate(groupName: String, update: String) {
+    @Synchronized fun pushUpdate(groupName: String, update: String) {
         val updateId = AccountUtils.getUniqueId()
         pendingUpdates[updateId] = PendingUpdate(groupName, update, updateId)
     }
 
-    fun pushUpdate(pendingUpdate: PendingUpdate) {
+    @Synchronized fun pushUpdate(pendingUpdate: PendingUpdate) {
         pendingUpdates[pendingUpdate.id] = pendingUpdate
     }
 
-    fun popPendingUpdates(): Set<PendingUpdate> {
+    @Synchronized fun popPendingUpdates(): Set<PendingUpdate> {
         val pendingUpdatesImmutable = pendingUpdates.toMap()
         pendingUpdates.keys.removeAll(pendingUpdatesImmutable.keys)
         return pendingUpdatesImmutable.values.toSet()
     }
 
-    fun hasPendingUpdates(): Boolean {
+    @Synchronized fun hasPendingUpdates(): Boolean {
         return pendingUpdates.isNotEmpty()
     }
 
-    fun getPendingUpdates(): Set<PendingUpdate> {
+    @Synchronized fun getPendingUpdates(): Set<PendingUpdate> {
         return pendingUpdates.values.toSet()
     }
 }

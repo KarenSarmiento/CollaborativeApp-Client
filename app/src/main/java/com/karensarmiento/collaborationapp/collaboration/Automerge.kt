@@ -45,8 +45,8 @@ internal class Automerge(
      *
      * All functions which make changes to state return a JSON summarising the change. This can be
      * accessed through the use of a functional callback.
-     */ // TODO: Ensure that a document is not edited concurrently. CREATE LOCK ON WEBVIEW?
-    fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
+     */
+    @Synchronized fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
         Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
@@ -59,7 +59,7 @@ internal class Automerge(
     }
 
 
-    fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript("javascript:removeCard(\"$docEncoded\", \"${index}\");") {
@@ -68,7 +68,7 @@ internal class Automerge(
     }
 
 
-    fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript(
@@ -77,7 +77,7 @@ internal class Automerge(
         }
     }
 
-    fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
         Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
@@ -94,7 +94,7 @@ internal class Automerge(
     }
 
 
-    fun createNewDocument(update: PendingUpdate, groupName: String, callback: ((String) -> Unit)? = null)  {
+    @Synchronized fun createNewDocument(update: PendingUpdate, groupName: String, callback: ((String) -> Unit)? = null)  {
         webview.evaluateJavascript("javascript:createNewTodoList();") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
@@ -106,29 +106,16 @@ internal class Automerge(
         }
     }
 
-    fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
         val docEncoded = AndroidUtils.base64(docToMerge)
         webview.evaluateJavascript("javascript:mergeNewDocument(\"$docEncoded\");") {
             if (it != "null" && it != null) {
+                GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
             } else {
                 peerMerges.pushUpdate(update)
             }
-        }
-    }
-
-    fun getChanges(groupName: String) {
-        val document = GroupManager.getDocument(groupName)!!
-        val docEncoded = AndroidUtils.base64(document)
-
-        val initDocument = GroupManager.getInitDocument(groupName)!!
-        val initDocEncoded = AndroidUtils.base64(document)
-        webview.evaluateJavascript(
-            "javascript:getChanges(\"$docEncoded\", \"$initDocEncoded\");") {
-            Log.i(TAG, "CHANGES SIZE = ${it.length}")
-            Log.i(TAG, it)
-            Log.i(TAG, "Document length = ${document.length}")
         }
     }
 
@@ -138,7 +125,8 @@ internal class Automerge(
         val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
 
         GroupManager.setDocument(groupName, updatedDoc!!)
-        callback?.invoke(changes!!.toString())
+        GroupManager.addChange(groupName, changes!!.toString())
+        callback?.invoke(changes.toString())
     }
 
     /**
