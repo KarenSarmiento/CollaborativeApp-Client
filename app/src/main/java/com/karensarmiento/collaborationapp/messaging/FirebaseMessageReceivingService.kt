@@ -213,7 +213,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         val members = getJsonArrayOrNull(message, Jk.MEMBERS.text)
         Log.i(TAG, "Received added_to_group message for groupName $groupName and " +
                 "groupId $groupId.")
-        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, Jk.WAITING_FOR_PEER.text)
+        registerValidatedGroupAndBroadcastOnSuccess(groupName, groupId, members, Jk.WAITING_FOR_PEER.text, Jk.WAITING_FOR_PEER.text)
     }
 
     /**
@@ -296,7 +296,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             val groupId = getStringOrNull(response, Jk.GROUP_ID.text)
             val members = getJsonArrayOrNull(response, Jk.MEMBERS.text)
             val registeredGroupName = registerValidatedGroupAndBroadcastOnSuccess(
-                groupName, groupId, members, Jk.WAITING_FOR_SELF.text) ?: return
+                groupName, groupId, members, Jk.WAITING_FOR_SELF.text, Jk.WAITING_FOR_SELF.text) ?: return
 
             // Log any failures. (Notify user?)
             val failedEmails = getJsonArrayOrNull(response, Jk.FAILED_EMAILS.text) ?: return
@@ -328,7 +328,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         }
     }
 
-    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?, document: String): String? {
+    private fun registerValidatedGroupAndBroadcastOnSuccess(groupName: String?, groupId: String?, members: JsonArray?, document: String, initDocument: String): String? {
         if (groupId == null) {
             Log.w(TAG, "Attempted to register group but no group id was specified. Will ignore request.")
             return null
@@ -363,7 +363,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             }
         }
 
-        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, document)
+        GroupManager.registerGroup(usedGroupName, groupId, memberEmails, document, initDocument)
         broadcastIntent(Jk.ADDED_TO_GROUP.text, usedGroupName)
         return usedGroupName
     }

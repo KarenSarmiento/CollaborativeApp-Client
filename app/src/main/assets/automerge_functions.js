@@ -25,6 +25,19 @@ let mergeNewDocument = function(docToMerge) {
     return Automerge.save(newDoc)
 }
 
+let getChanges = function(docPersisted, initDoc) {
+    console.log(docPersisted)
+    console.log(initDoc)
+    // Load init doc.
+    let initDecoded = atob(initDoc)
+    let initLoaded = Automerge.load(initDecoded)
+
+    // Load persisted doc.
+    let docDecoded = atob(docPersisted)
+    let docLoaded = Automerge.load(docDecoded)
+    return Automerge.getChanges(initLoaded, docLoaded)
+}
+
 let applyJsonUpdate = function(docPersisted, changes) {
     // Load doc.
     let docDecoded = atob(docPersisted)

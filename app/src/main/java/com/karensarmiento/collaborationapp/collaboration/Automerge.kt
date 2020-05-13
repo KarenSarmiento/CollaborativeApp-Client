@@ -98,6 +98,7 @@ internal class Automerge(
         webview.evaluateJavascript("javascript:createNewTodoList();") {
             if (it != "null" && it != null) {
                 GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
                 callback?.invoke(it)
             } else {
                 docInits.pushUpdate(update)
@@ -114,6 +115,20 @@ internal class Automerge(
             } else {
                 peerMerges.pushUpdate(update)
             }
+        }
+    }
+
+    fun getChanges(groupName: String) {
+        val document = GroupManager.getDocument(groupName)!!
+        val docEncoded = AndroidUtils.base64(document)
+
+        val initDocument = GroupManager.getInitDocument(groupName)!!
+        val initDocEncoded = AndroidUtils.base64(document)
+        webview.evaluateJavascript(
+            "javascript:getChanges(\"$docEncoded\", \"$initDocEncoded\");") {
+            Log.i(TAG, "CHANGES SIZE = ${it.length}")
+            Log.i(TAG, it)
+            Log.i(TAG, "Document length = ${document.length}")
         }
     }
 
