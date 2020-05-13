@@ -12,6 +12,7 @@ import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
 import com.karensarmiento.collaborationapp.utils.*
+import java.lang.Exception
 import javax.crypto.SecretKey
 import javax.json.JsonArray
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
@@ -394,8 +395,14 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         sendBroadcast(updateIntent)
     }
 
-//    override fun onMessageSent(s: String) {
-//        super.onMessageSent(s)
-//        Log.i(TAG, "*** Officially sent upstream message: $s")
-//    }
+    override fun onMessageSent(s: String) {
+        super.onMessageSent(s)
+        Log.i(TAG, "*** Officially sent upstream message: $s")
+    }
+
+    override fun onSendError(messageId : String, sendException: Exception) {
+        Log.i(TAG, "Message failed to send: $messageId")
+        Log.i(TAG, "Exception is ${sendException.toString()}")
+        sendException.printStackTrace()
+    }
 }

@@ -54,7 +54,7 @@ internal class Automerge(
         webview.evaluateJavascript(
             "javascript:addCard(\"$docEncoded\", \"$titleEncoded\", ${card.completed});") {
             Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
-            handleUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName, callback)
         }
     }
 
@@ -63,7 +63,7 @@ internal class Automerge(
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript("javascript:removeCard(\"$docEncoded\", \"${index}\");") {
-            handleUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName, callback)
         }
     }
 
@@ -73,7 +73,7 @@ internal class Automerge(
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript(
             "javascript:setCardCompleted(\"$docEncoded\", \"${index}\", ${completed});") {
-            handleUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName, callback)
         }
     }
 
@@ -117,7 +117,7 @@ internal class Automerge(
         }
     }
 
-    private fun handleUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
+    private fun handleLocalUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
         val responseJson = jsonStringToJsonObject(output)
         val changes = getJsonArrayOrNull(responseJson, Jk.CHANGES.text)
         val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
