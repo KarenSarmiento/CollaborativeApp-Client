@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         // We need to makes sure therefore that we do not attempt to apply the update more than once by
         // associating each update with a mutex
         // What if we remove it straight away. Then add it back on if failed.
+        automerge.getChanges(GroupManager.currentGroup!!)
         while (docInits.hasPendingUpdates()) {
             for (docInit in docInits.popPendingUpdates()) {
                 val document = GroupManager.getDocument(docInit.groupName)
