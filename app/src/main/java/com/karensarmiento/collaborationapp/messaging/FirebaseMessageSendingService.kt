@@ -34,8 +34,19 @@ object FirebaseMessageSendingService {
 
         // Send changes to peers.
         val changes = GroupManager.getChanges(GroupManager.groupName(groupId)!!)!!
-        changes.forEach { change -> sendJsonUpdateToCurrentDeviceGroup(change) }
-        Log.i(TAG, "Sent document changes to peer.")
+        changes.forEach { change ->
+            Test.currMeasurement.encryptStart = System.currentTimeMillis()
+            val request = Json.createObjectBuilder()
+                .add(Jk.PEER_TYPE.text, Jk.CHANGES.text)
+                .add(Jk.GROUP_ID.text, groupId)
+                .add(Jk.GROUP_ID.text, groupId)
+                .add(Jk.CHANGES.text, change)
+                .build().toString()
+            val mId = AccountUtils.getUniqueId()
+            sendEncryptedPeerMessage(request, peerEmail, mId)
+            Log.i(TAG, "Sent a changes to peer: $mId")
+        }
+        Log.i(TAG, "Sent all document changes to peer.")
     }
 
     fun sendSymmetricKeyToPeer(peerEmail: String, groupId: String, key: String) {
@@ -49,6 +60,7 @@ object FirebaseMessageSendingService {
         // Create request.
         val messageId = AccountUtils.getUniqueId()
         sendEncryptedPeerMessage(peerMessage, peerEmail, messageId)
+        Log.i(TAG, "Sent symmetric key to peer: $messageId")
     }
 
     fun sendRegisterPublicKeyRequest(publicKey: String) {

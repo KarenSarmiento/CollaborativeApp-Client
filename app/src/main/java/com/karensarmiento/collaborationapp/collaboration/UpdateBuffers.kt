@@ -1,13 +1,9 @@
 package com.karensarmiento.collaborationapp.collaboration
 
-import android.util.Log
 import com.karensarmiento.collaborationapp.utils.AccountUtils
 
 private const val TAG = "UpdateBuffer"
 
-// TODO: Change to generic type.
-// TODO: Impose mutex on pendingUpdates vs lock on individual items ? Or in webview?
-// Lock on individual items
 class UpdateBuffer {
     private val pendingUpdates = mutableMapOf<String, PendingUpdate>()
 
@@ -37,6 +33,41 @@ class UpdateBuffer {
 
 data class PendingUpdate(val groupName: String, val update: String, val id: String)
 
-val peerUpdates = UpdateBuffer()
-val peerMerges = UpdateBuffer()
-val docInits = UpdateBuffer()
+val docInitBuffer = UpdateBuffer()
+val peerMergeBuffer = UpdateBuffer()
+val peerUpdateBuffer = UpdateBuffer()
+
+class UpdateBufferList {
+    private val pendingUpdates = mutableMapOf<String, MutableList<PendingUpdate>>()
+
+    @Synchronized fun pushUpdate(groupName: String, update: String) {
+        val updateId = AccountUtils.getUniqueId()
+        if (pendingUpdates[groupName] == null) {
+            pendingUpdates[groupName] = mutableListOf()
+        }
+        pendingUpdates[groupName]!!.add(PendingUpdate(groupName, update, updateId))
+    }
+
+    @Synchronized fun hasPendingUpdatesForKey(key: String): Boolean {
+        if (pendingUpdates[key] == null)
+            return false
+        return pendingUpdates[key]!!.isEmpty()
+    }
+
+    @Synchronized fun popPendingUpdatesForKey(key: String): List<PendingUpdate> {
+        if (key in pendingUpdates) {
+            return pendingUpdates[key]!!.toList()
+        }
+        return listOf()
+    }
+
+    @Synchronized fun deleteKey(key: String) {
+        pendingUpdates.remove(key)
+    }
+}
+
+/**
+ * Used to store updates that were received for each group BEFORE they could be decrypted since
+ * the client did not yet own the user key for that group.
+ */
+val unencryptedUpdateBuffer = UpdateBufferList()

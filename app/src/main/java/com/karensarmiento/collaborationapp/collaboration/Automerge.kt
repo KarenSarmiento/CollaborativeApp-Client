@@ -1,10 +1,12 @@
 package com.karensarmiento.collaborationapp.collaboration
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
+import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.utils.*
@@ -12,9 +14,9 @@ import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class Card(val title: String, val completed: Boolean)
+data class Card(val title: String, val completed: Boolean)
 
-internal class Automerge(
+class Automerge(
     /** The webview to run Automerge in. It should not surprisingly restart */
     private val webview: WebView,
 
@@ -58,7 +60,6 @@ internal class Automerge(
         }
     }
 
-
     @Synchronized fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
@@ -66,7 +67,6 @@ internal class Automerge(
             handleLocalUpdateOutput(it, groupName, callback)
         }
     }
-
 
     @Synchronized fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
         val document = GroupManager.getDocument(groupName)!!
@@ -77,48 +77,85 @@ internal class Automerge(
         }
     }
 
-    @Synchronized fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String) {
         Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         val updateEncoded = AndroidUtils.base64(jsonUpdate)
         webview.evaluateJavascript("javascript:applyJsonUpdate(\"$docEncoded\", \"$updateEncoded\");") {
-            if (it != "null" && it != null) {
-                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
-                Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
-                callback?.invoke(it)
-            } else {
-                peerUpdates.pushUpdate(update)
+            try {
+                if (it != "null" && it != null) {
+                    Log.i(TAG, "Just finished applying an update and got doc: $it")
+                    GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                    Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
+                    // ===================================
+//                       if (Build.VERSION.RELEASE == "9") { // SAMSUNG
+//                            // Store measurements
+//                            storeMeasurements()
+//                            if (Test.count < NUM_RUNS) {
+//                                resetDocAndUI()
+//                                // Reset test result holder
+//                                Test.currMeasurement = TimingMeasurement()
+//                                // Add new card to initiate next test.
+//                                testingAddCard()
+//                            }
+//                            Test.count++
+//                        } else { // HUAWEI
+//                            testingAddCard {
+//                                resetDocAndUI()
+//                            }
+//                        }
+                    // ===================================
+                } else {
+                    peerUpdateBuffer.pushUpdate(update)
+                }
+            } finally {
+                GroupManager.unlock(groupName)
+                broadcastBufferUpdates(groupName)
             }
         }
     }
 
 
-    @Synchronized fun createNewDocument(update: PendingUpdate, groupName: String, callback: ((String) -> Unit)? = null)  {
+    @Synchronized fun createNewDocument(update: PendingUpdate, groupName: String)  {
         webview.evaluateJavascript("javascript:createNewTodoList();") {
-            if (it != "null" && it != null) {
-                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
-                GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
-                callback?.invoke(it)
-            } else {
-                docInits.pushUpdate(update)
+            try {
+                if (it != "null" && it != null) {
+                    GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                    GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
+                    Test.initDoc = it.removeSurrounding("\"")
+                    Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(it)}")
+
+                } else {
+                    docInitBuffer.pushUpdate(update)
+                }
+            } finally {
+                GroupManager.unlock(groupName)
+                broadcastBufferUpdates(groupName)
             }
         }
     }
 
-    @Synchronized fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun mergeNewDocument(update: PendingUpdate, groupName: String, docToMerge: String) {
         val docEncoded = AndroidUtils.base64(docToMerge)
         webview.evaluateJavascript("javascript:mergeNewDocument(\"$docEncoded\");") {
-            if (it != "null" && it != null) {
-                GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
-                GroupManager.setDocument(groupName, it.removeSurrounding("\""))
-                callback?.invoke(it)
-            } else {
-                peerMerges.pushUpdate(update)
+            try {
+                if (it != "null" && it != null) {
+                    GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
+                    GroupManager.setDocument(groupName, it.removeSurrounding("\""))
+                    Test.initDoc = it.removeSurrounding("\"")
+                    Log.i(TAG, "Applied peerMerge! Doc is now ${GroupManager.getDocument(groupName)}")
+                } else {
+                    peerMergeBuffer.pushUpdate(update)
+                }
+            } finally {
+                GroupManager.unlock(groupName)
+                broadcastBufferUpdates(groupName)
             }
         }
     }
 
+    // TODO: unlock here (lock before local updates)
     private fun handleLocalUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
         val responseJson = jsonStringToJsonObject(output)
         val changes = getJsonArrayOrNull(responseJson, Jk.CHANGES.text)
@@ -127,6 +164,13 @@ internal class Automerge(
         GroupManager.setDocument(groupName, updatedDoc!!)
         GroupManager.addChange(groupName, changes!!.toString())
         callback?.invoke(changes.toString())
+    }
+
+    private fun broadcastBufferUpdates(groupName: String) {
+        val updateIntent = Intent()
+        updateIntent.action = Jk.GROUP_MESSAGE.text
+        updateIntent.putExtra(Jk.VALUE.text, groupName)
+        MainActivity.appContext?.sendBroadcast(updateIntent)
     }
 
     /**

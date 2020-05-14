@@ -10,7 +10,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.os.Build
 import android.os.Environment
 import android.widget.ImageButton
 import com.karensarmiento.collaborationapp.grouping.GroupManager
@@ -27,7 +26,6 @@ import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingServi
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.karensarmiento.collaborationapp.evaluation.Test
-import com.karensarmiento.collaborationapp.evaluation.TimingMeasurement
 import java.io.File
 
 
@@ -62,10 +60,10 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 applyBufferedUpdates()
                 setUpButtonListeners()
+                // TODO: Get current group and restore all to-dos.
             }
         }
         registerJsonUpdateListener()
-        // TODO: Get current group and restore all to-dos - obtain from getting history in automerge.
     }
 
     // Adds share icon.
@@ -92,79 +90,32 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun applyBufferedUpdates() {
+    @Synchronized private fun applyBufferedUpdates() {
         handleBufferedDocInits()
         handleBufferedPeerMerges()
         handleBufferedPeerUpdates()
     }
 
     private fun handleBufferedDocInits() {
-        while (docInits.hasPendingUpdates()) {
-            for (docInit in docInits.popPendingUpdates()) {
-                val document = GroupManager.getDocument(docInit.groupName)
-                if (document == Jk.WAITING_FOR_SELF.text) {
-                    automerge.createNewDocument(docInit, docInit.groupName) {
-                        Test.initDoc = it.removeSurrounding("\"")
-                        Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(docInit.groupName)}")
-                        applyBufferedUpdates()
-                    }
-                } else {
-                    Log.w(TAG, "Got a pending doc init for group ${docInit.groupName} but " +
-                            "this group's document was in state: $document.")
-                    docInits.pushUpdate(docInit)
-                }
+        while (docInitBuffer.hasPendingUpdates()) {
+            for (docInit in docInitBuffer.popPendingUpdates()) {
+                DocInitHandler(automerge, docInit).execute()
             }
         }
     }
 
     private fun handleBufferedPeerMerges() {
-        while (peerMerges.hasPendingUpdates()) {
-            for (peerMerge in peerMerges.popPendingUpdates()) {
-                val document = GroupManager.getDocument(peerMerge.groupName)
-                if (document == Jk.WAITING_FOR_PEER.text) {
-                    automerge.mergeNewDocument(peerMerge, peerMerge.groupName, peerMerge.update) {
-                        Test.initDoc = it.removeSurrounding("\"")
-                        Log.i(TAG, "Applied peerMerge! Doc is now ${GroupManager.getDocument(peerMerge.groupName)}")
-                        applyBufferedUpdates()
-                    }
-                } else {
-                    Log.w(TAG, "Got a pending peer merge for group ${peerMerge.groupName} but " +
-                            "this group's document was in state: $document.")
-                    peerMerges.pushUpdate(peerMerge)
-                }
+        while (peerMergeBuffer.hasPendingUpdates()) {
+            for (peerMerge in peerMergeBuffer.popPendingUpdates()) {
+                PeerMergeHandler(automerge, peerMerge).execute()
             }
         }
     }
 
     private fun handleBufferedPeerUpdates() {
-        if (peerUpdates.hasPendingUpdates()) {
-            for (pendingUpdate in peerUpdates.popPendingUpdates()) {
-                val document = GroupManager.getDocument(pendingUpdate.groupName)
-                if (document != Jk.WAITING_FOR_PEER.text && document != Jk.WAITING_FOR_SELF.text) {
-                    automerge.applyJsonUpdate(pendingUpdate, pendingUpdate.groupName, pendingUpdate.update) {
-//                        if (Build.VERSION.RELEASE == "9") { // SAMSUNG
-//                            // Store measurements
-//                            storeMeasurements()
-//                            if (Test.count < NUM_RUNS) {
-//                                resetDocAndUI()
-//                                // Reset test result holder
-//                                Test.currMeasurement = TimingMeasurement()
-//                                // Add new card to initiate next test.
-//                                testingAddCard()
-//                            }
-//                            Test.count++
-//                        } else { // HUAWEI
-//                            testingAddCard {
-//                                resetDocAndUI()
-//                            }
-//                        }
-                        Log.i(TAG, "Applied pendingUpdate! Doc is now ${GroupManager.getDocument(pendingUpdate.groupName)}")
-                    }
-                } else {
-                    Log.i(TAG, "Could not apply peer update for group " +
-                            "${pendingUpdate.groupName} since their document is in state $document")
-                    peerUpdates.pushUpdate(pendingUpdate)
-                }
+        if (peerUpdateBuffer.hasPendingUpdates()) {
+            for (peerUpdate in peerUpdateBuffer.popPendingUpdates()) {
+                PeerUpdateHandler(automerge, peerUpdate).execute()
             }
         }
     }

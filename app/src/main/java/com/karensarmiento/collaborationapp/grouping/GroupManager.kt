@@ -1,9 +1,14 @@
 package com.karensarmiento.collaborationapp.grouping
 
 import android.util.Log
+import java.util.concurrent.Semaphore
 import javax.crypto.SecretKey
 
 
+/**
+ * Methods are synchronised to ensure that the containsKey check is still valid until later in the
+ * function.
+ */
 object GroupManager {
     private const val TAG = "GroupManager"
 
@@ -19,11 +24,11 @@ object GroupManager {
     var currentGroup: String? = null
         get() = field
 
-    fun getCurrentGroupKey(): SecretKey? {
+    @Synchronized fun getCurrentGroupKey(): SecretKey? {
         return groups[currentGroup]?.key
     }
 
-    fun maybeSetCurrentGroup(groupName: String): Boolean {
+    @Synchronized fun maybeSetCurrentGroup(groupName: String): Boolean {
         if (groups.containsKey(groupName)) {
             currentGroup = groupName
             return true
@@ -32,22 +37,24 @@ object GroupManager {
         return false
     }
 
-    fun groupId(groupName: String): String? {
+    @Synchronized fun groupId(groupName: String): String? {
         return groups[groupName]?.groupId
     }
 
-    fun registerGroup(
+    @Synchronized fun registerGroup(
         groupName: String, groupId: String, memberEmails: MutableSet<String>, document: String,
         initDocument: String, key: SecretKey? = null) {
         if (groupName in groups) {
             Log.e(TAG, "Cannot register group with name $groupName since group already exists.")
             return
         }
-        groups[groupName] = GroupData(groupId, memberEmails, key, document, initDocument, mutableSetOf())
+        groups[groupName] = GroupData(groupId, memberEmails, key, document, initDocument,
+            mutableSetOf(), Semaphore(1)
+        )
         Log.i(TAG, "Registered $groupName to groupId $groupId.")
     }
 
-    fun getDocument(groupName: String): String? {
+    @Synchronized fun getDocument(groupName: String): String? {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot get document for group $groupName since this group does not exist.")
             return null
@@ -55,7 +62,7 @@ object GroupManager {
         return groups[groupName]!!.document
     }
 
-    fun setDocument(groupName: String, document: String) {
+    @Synchronized fun setDocument(groupName: String, document: String) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot set document for group $groupName since this group does not exist.")
             return
@@ -63,7 +70,7 @@ object GroupManager {
         groups[groupName]!!.document = document.removeSurrounding("\"").replace("\\\"", "\"")
     }
 
-    fun getInitDocument(groupName: String): String? {
+    @Synchronized fun getInitDocument(groupName: String): String? {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot get init document for group $groupName since this group does not exist.")
             return null
@@ -71,7 +78,7 @@ object GroupManager {
         return groups[groupName]!!.initDocument
     }
 
-    fun setInitDocument(groupName: String, document: String) {
+    @Synchronized fun setInitDocument(groupName: String, document: String) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot set init document for group $groupName since this group does not exist.")
             return
@@ -79,15 +86,15 @@ object GroupManager {
         groups[groupName]!!.initDocument = document.removeSurrounding("\"").replace("\\\"", "\"")
     }
 
-    fun getAllRegisteredGroups(): MutableSet<String> {
+    @Synchronized fun getAllRegisteredGroups(): MutableSet<String> {
         return groups.keys
     }
 
-    fun getGroupKey(groupName: String): SecretKey? {
+    @Synchronized fun getGroupKey(groupName: String): SecretKey? {
         return groups[groupName]?.key
     }
 
-    fun setGroupKey(groupName: String, aesKey: SecretKey) {
+    @Synchronized fun setGroupKey(groupName: String, aesKey: SecretKey) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot set key for group $groupName since this group does not exist.")
             return
@@ -95,7 +102,7 @@ object GroupManager {
         groups[groupName]!!.key = aesKey
     }
 
-    fun getMembers(groupName: String): Set<String>? {
+    @Synchronized fun getMembers(groupName: String): Set<String>? {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot get members for group $groupName since this group does not exist.")
             return null
@@ -104,7 +111,7 @@ object GroupManager {
     }
 
     // TODO: Once eliminated group name, remove this method. Avoid linear search!!
-    fun groupName(groupId: String): String? {
+    @Synchronized fun groupName(groupId: String): String? {
         for ((groupName, groupData) in groups) {
             if (groupData.groupId == groupId)
                 return groupName
@@ -113,7 +120,7 @@ object GroupManager {
         return null
     }
 
-    fun addToGroup(groupName: String, peerEmail: String) {
+    @Synchronized fun addToGroup(groupName: String, peerEmail: String) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot add $peerEmail to group $groupName since this group does not exist.")
             return
@@ -121,11 +128,11 @@ object GroupManager {
         groups[groupName]!!.members.add(peerEmail)
     }
 
-    fun leaveGroup(groupName: String) {
+    @Synchronized fun leaveGroup(groupName: String) {
         groups.remove(groupName)
     }
 
-    fun removePeerFromGroup(groupName: String, peerEmail: String) {
+    @Synchronized fun removePeerFromGroup(groupName: String, peerEmail: String) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Cannot remove $peerEmail from group $groupName since this group does not exist.")
             return
@@ -133,7 +140,7 @@ object GroupManager {
         groups[groupName]!!.members.remove(peerEmail)
     }
 
-    fun isMember(groupName: String, email: String): Boolean {
+    @Synchronized fun isMember(groupName: String, email: String): Boolean {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Group with name $groupName does not exist.")
             return false
@@ -145,7 +152,7 @@ object GroupManager {
         return member
     }
 
-    fun addChange(groupName: String, change: String) {
+    @Synchronized fun addChange(groupName: String, change: String) {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Group with name $groupName does not exist.")
             return
@@ -153,19 +160,44 @@ object GroupManager {
         groups[groupName]!!.changes.add(change)
     }
 
-    fun getChanges(groupName: String): MutableSet<String>? {
+    @Synchronized fun getChanges(groupName: String): MutableSet<String>? {
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Group with name $groupName does not exist.")
             return null
         }
         return groups[groupName]!!.changes
     }
+
+    fun lock(groupName: String) {
+        Log.i(TAG, "LOCK 1")
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Group with name $groupName does not exist.")
+            return
+        }
+        groups[groupName]!!.lock.acquire()
+        Log.i(TAG, "LOCK 2: ${groups[groupName]!!.lock.availablePermits()}")
+    }
+
+    fun unlock(groupName: String) {
+        Log.i(TAG, "UNLOCK 1")
+        if (!groups.containsKey(groupName)) {
+            Log.e(TAG, "Group with name $groupName does not exist.")
+            return
+        }
+        groups[groupName]!!.lock.release()
+        Log.i(TAG, "UNLOCK 2: ${groups[groupName]!!.lock.availablePermits()}")
+    }
 }
 
 /**
  *  Contains all data associated with a group.
  *
- *  GroupId is a globally unique identifier for the group.
+ *  - GroupId is a globally unique identifier for the group.
+ *  - initDocument contains the first document string that has been stored for this group.
+ *  - changes are a set of all the changes that have been applied since initDocument was made.
+ *  - document is the current document string.
+ *  - a lock that must be acquired in order to read or write to the document.
  */
 data class GroupData(var groupId: String, val members: MutableSet<String>, var key: SecretKey?,
-                     var document: String, var initDocument: String,  val changes: MutableSet<String>)
+                     var document: String, var initDocument: String, val changes: MutableSet<String>,
+                     val lock: Semaphore)

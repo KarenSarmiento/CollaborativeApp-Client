@@ -4,52 +4,69 @@
  *
  * We may also call Kotlin/Android functions in JS (here). This is done by using the 'ktchannel'
  * interface, which is defined in Automerge.kt.
+ *
+ * It can be assumed that functions are atomically run (thanks to Kotlin synchronisation).
+ *
  */
 
-let log = function (text) { document.getElementById('output').textContent += "> " + text + "\n" }
+// TODO: Pass group names into each function, instead of just using "grp" for everything.
 let CHANGES = "changes"
 let UPDATED_DOC = "updated_doc"
+let map = new Map()
+
+
+// If not in map, decode document and save json to map.
+// If in map, get json from map.
+let getDoc = function(group_name, document) {
+    if (map.has(group_name))
+        return map.get(group_name)
+    console.log("DOC NOT HERE :)")
+    let docDecoded = atob(document)
+    let docLoaded = Automerge.load(docDecoded)
+    map.set(group_name, docLoaded)
+    return docLoaded
+}
 
 let createNewTodoList = function() {
     let newDoc = Automerge.from({ cards: [] })
-    log("Created new todo list: " + newDoc)
+    map.set("grp", newDoc)
     return Automerge.save(newDoc)
 }
 
 let mergeNewDocument = function(docToMerge) {
     // Load doc.
-    let docToMergeDecoded = atob(docToMerge)
+    let doc = getDoc("grp", docToMerge)
 
     // Merge and return
-    let newDoc = Automerge.merge(Automerge.init(), Automerge.load(docToMergeDecoded))
+    let newDoc = Automerge.merge(Automerge.init(), doc)
+    map.set("grp", newDoc)
     ktchannel.onCardsChange(JSON.stringify(newDoc.cards))
     return Automerge.save(newDoc)
 }
 
 let applyJsonUpdate = function(docPersisted, changes) {
     // Load doc.
-    let docDecoded = atob(docPersisted)
-    let docLoaded = Automerge.load(docDecoded)
-    
+    let docLoaded = getDoc("grp", docPersisted)
+
     // Parse changes.
     let changesDecoded = atob(changes)
     let changesParsed = JSON.parse(changesDecoded)
     // Apply changes.
     let updatedDoc = Automerge.applyChanges(docLoaded, changesParsed)
+    map.set("grp", updatedDoc)
     // Return new doc.
-    log("> " + JSON.stringify(updatedDoc.cards))
     ktchannel.onCardsChange(JSON.stringify(updatedDoc.cards))
     return Automerge.save(updatedDoc)
 }
 
 let applyLocalChange = function(eventName, docPersisted, changeLambda) {
     // Load doc.
-    let docPersistedDecoded = atob(docPersisted)
-    let doc = Automerge.load(docPersistedDecoded)
+    let doc = getDoc("grp", docPersisted)
 
     // Apply change.
     let newDoc = Automerge.change(doc, eventName, changeLambda)
     let changes = Automerge.getChanges(doc, newDoc)
+    map.set("grp", newDoc)
 
     // Return new doc.
     let newDocPersisted = Automerge.save(newDoc)
