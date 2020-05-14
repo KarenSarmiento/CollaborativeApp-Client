@@ -20,7 +20,6 @@ let map = new Map()
 let getDoc = function(group_name, document) {
     if (map.has(group_name))
         return map.get(group_name)
-    console.log("DOC NOT HERE :)")
     let docDecoded = atob(document)
     let docLoaded = Automerge.load(docDecoded)
     map.set(group_name, docLoaded)
@@ -97,4 +96,9 @@ let setCardCompleted = function (docPersisted, index, completed) {
             it.cards[index].completed = completed
         }
     return applyLocalChange(eventName, docPersisted, changeLambda)
+}
+
+let updateCardsUI = function(docPersisted) {
+    let doc = getDoc("grp", docPersisted)
+    ktchannel.onCardsChange(JSON.stringify(doc.cards))
 }

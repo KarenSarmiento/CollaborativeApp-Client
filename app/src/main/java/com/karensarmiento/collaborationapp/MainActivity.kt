@@ -58,9 +58,9 @@ class MainActivity : AppCompatActivity() {
         // Apply buffered updates once webview has successfully loaded.
         webview.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
+                automerge.updateUI(GroupManager.currentGroup!!)
                 applyBufferedUpdates()
                 setUpButtonListeners()
-                // TODO: Get current group and restore all to-dos.
             }
         }
         registerJsonUpdateListener()

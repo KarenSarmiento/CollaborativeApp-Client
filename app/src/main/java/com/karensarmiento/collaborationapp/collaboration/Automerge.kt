@@ -155,6 +155,14 @@ class Automerge(
         }
     }
 
+    @Synchronized fun updateUI(groupName: String) {
+        val document = GroupManager.getDocument(groupName)!!
+        if (document != Jk.WAITING_FOR_SELF.text && document != Jk.WAITING_FOR_PEER.text) {
+            val docEncoded = AndroidUtils.base64(document)
+            webview.evaluateJavascript("javascript:updateCardsUI(\"$docEncoded\");") {}
+        }
+    }
+
     // TODO: unlock here (lock before local updates)
     private fun handleLocalUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
         val responseJson = jsonStringToJsonObject(output)

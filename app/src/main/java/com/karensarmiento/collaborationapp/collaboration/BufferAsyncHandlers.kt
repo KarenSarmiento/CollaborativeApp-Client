@@ -11,7 +11,6 @@ class DocInitHandler(val automerge: Automerge, private val docInit: PendingUpdat
     val TAG = "DocInitHandler"
 
     override fun doInBackground(vararg params: Void): Void? {
-        Log.i(TAG, "OBTAINING LOCK FOR DOC INIT HANDLING.")
         GroupManager.lock(docInit.groupName)
         return null
     }
@@ -37,7 +36,6 @@ class PeerMergeHandler(val automerge: Automerge, private val peerMerge: PendingU
     val TAG = "PeerMergeHandler"
 
     override fun doInBackground(vararg params: Void): Void? {
-        Log.i(TAG, "OBTAINING LOCK FOR PEER MERGE HANDLING.")
         GroupManager.lock(peerMerge.groupName)
         return null
     }
@@ -63,7 +61,6 @@ class PeerUpdateHandler(val automerge: Automerge, private val peerUpdate: Pendin
     val TAG = "PeerUpdateHandler"
 
     override fun doInBackground(vararg params: Void): Void? {
-        Log.i(TAG, "OBTAINING LOCK FOR PEER UPDATE HANDLING.")
         GroupManager.lock(peerUpdate.groupName)
         return null
     }

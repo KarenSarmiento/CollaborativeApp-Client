@@ -169,23 +169,19 @@ object GroupManager {
     }
 
     fun lock(groupName: String) {
-        Log.i(TAG, "LOCK 1")
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Group with name $groupName does not exist.")
             return
         }
         groups[groupName]!!.lock.acquire()
-        Log.i(TAG, "LOCK 2: ${groups[groupName]!!.lock.availablePermits()}")
     }
 
     fun unlock(groupName: String) {
-        Log.i(TAG, "UNLOCK 1")
         if (!groups.containsKey(groupName)) {
             Log.e(TAG, "Group with name $groupName does not exist.")
             return
         }
         groups[groupName]!!.lock.release()
-        Log.i(TAG, "UNLOCK 2: ${groups[groupName]!!.lock.availablePermits()}")
     }
 }
 
