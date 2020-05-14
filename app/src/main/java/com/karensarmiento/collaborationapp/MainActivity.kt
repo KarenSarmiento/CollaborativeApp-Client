@@ -22,7 +22,6 @@ import com.karensarmiento.collaborationapp.collaboration.Automerge
 import com.karensarmiento.collaborationapp.collaboration.Card
 import com.karensarmiento.collaborationapp.grouping.GroupSettingsActivity
 import com.karensarmiento.collaborationapp.utils.AndroidUtils
-import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService as FirebaseSending
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.karensarmiento.collaborationapp.evaluation.Test
@@ -139,10 +138,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun testingAddCard(todoText: String = "", callback: ((Unit) -> Unit)? = null) {
         Test.currMeasurement.start = System.currentTimeMillis()
-        automerge.addCard(currentGroup, Card(todoText, false)) {
-            FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
-            callback?.invoke(Unit)
-        }
+        // TODO: Ensure that this doesn't send a message across when testing.
+        automerge.addCard(currentGroup, Card(todoText, false))
         todo_entry_box.text_entry.setText("")
     }
 
@@ -168,20 +165,15 @@ class MainActivity : AppCompatActivity() {
     private fun setUpButtonListeners() {
         todo_entry_box.button_add_todo.setOnClickListener {
             val todoText = todo_entry_box.text_entry.text.toString()
-            automerge.addCard(currentGroup, Card(todoText, false)) {
-                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
-            }
+            TodoAdder(automerge, currentGroup, todoText).execute()
             todo_entry_box.text_entry.setText("")
         }
     }
 
     fun onCheckboxClicked(view: View) {
-        Test.currMeasurement.start = System.currentTimeMillis()
         if (view is CheckBox) {
             val index = layout_todos.indexOfChild(view.parent.parent.parent as ViewGroup)
-            automerge.setCardCompleted(currentGroup, index, view.isChecked) {
-                FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
-            }
+            TodoChecker(automerge, currentGroup, index, view.isChecked).execute()
         }
     }
 
@@ -209,9 +201,7 @@ class MainActivity : AppCompatActivity() {
             val deleteButton = view.findViewById<ImageButton>(R.id.button_delete)
             deleteButton.setOnClickListener {
                 val index = layout_todos.indexOfChild(view as ViewGroup)
-                automerge.removeCard(currentGroup, index) {
-                    FirebaseSending.sendJsonUpdateToCurrentDeviceGroup(it)
-                }
+                TodoDeleter(automerge, currentGroup, index).execute()
             }
 
             // Display cards in UI.

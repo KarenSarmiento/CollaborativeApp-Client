@@ -9,6 +9,7 @@ import android.widget.Toast
 import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
 import com.karensarmiento.collaborationapp.utils.*
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import org.json.JSONArray
@@ -48,7 +49,7 @@ class Automerge(
      * All functions which make changes to state return a JSON summarising the change. This can be
      * accessed through the use of a functional callback.
      */
-    @Synchronized fun addCard(groupName: String, card: Card, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun addCard(groupName: String, card: Card) {
         Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
@@ -56,24 +57,24 @@ class Automerge(
         webview.evaluateJavascript(
             "javascript:addCard(\"$docEncoded\", \"$titleEncoded\", ${card.completed});") {
             Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
-            handleLocalUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName)
         }
     }
 
-    @Synchronized fun removeCard(groupName: String, index: Int, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun removeCard(groupName: String, index: Int) {
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript("javascript:removeCard(\"$docEncoded\", \"${index}\");") {
-            handleLocalUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName)
         }
     }
 
-    @Synchronized fun setCardCompleted(groupName: String, index: Int, completed: Boolean, callback: ((String) -> Unit)? = null) {
+    @Synchronized fun setCardCompleted(groupName: String, index: Int, completed: Boolean) {
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         webview.evaluateJavascript(
             "javascript:setCardCompleted(\"$docEncoded\", \"${index}\", ${completed});") {
-            handleLocalUpdateOutput(it, groupName, callback)
+            handleLocalUpdateOutput(it, groupName)
         }
     }
 
@@ -163,15 +164,15 @@ class Automerge(
         }
     }
 
-    // TODO: unlock here (lock before local updates)
-    private fun handleLocalUpdateOutput(output: String, groupName: String, callback: ((String) -> Unit)?) {
+    private fun handleLocalUpdateOutput(output: String, groupName: String) {
         val responseJson = jsonStringToJsonObject(output)
         val changes = getJsonArrayOrNull(responseJson, Jk.CHANGES.text)
         val updatedDoc = getStringOrNull(responseJson, Jk.UPDATED_DOC.text)
 
         GroupManager.setDocument(groupName, updatedDoc!!)
         GroupManager.addChange(groupName, changes!!.toString())
-        callback?.invoke(changes.toString())
+        GroupManager.unlock(groupName)
+        FirebaseMessageSendingService.sendJsonUpdateToCurrentDeviceGroup(changes.toString())
     }
 
     private fun broadcastBufferUpdates(groupName: String) {
