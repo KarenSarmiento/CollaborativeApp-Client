@@ -13,6 +13,13 @@
         android:layout_height="0dp"
         android:visibility="invisible"/>
 
+<!--    For evaluation purposes only!!-->
+    <Button
+        android:id="@+id/store_init_doc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Store Test.init" />
+
     <include
         layout="@layout/todo_entry_box"
         android:id="@+id/todo_entry_box"

@@ -2,6 +2,7 @@ package com.karensarmiento.collaborationapp.collaboration
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -28,7 +29,6 @@ class Automerge(
     companion object {
         private const val TAG = "Automerge.kt"
     }
-
 
     private val perfLogger =
         PerfLogger { name, time ->
@@ -86,27 +86,13 @@ class Automerge(
         webview.evaluateJavascript("javascript:applyJsonUpdate(\"$docEncoded\", \"$updateEncoded\");") {
             try {
                 if (it != "null" && it != null) {
-                    Log.i(TAG, "Just finished applying an update and got doc: $it")
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                     Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
-                    // ===================================
-//                       if (Build.VERSION.RELEASE == "9") { // SAMSUNG
-//                            // Store measurements
-//                            storeMeasurements()
-//                            if (Test.count < NUM_RUNS) {
-//                                resetDocAndUI()
-//                                // Reset test result holder
-//                                Test.currMeasurement = TimingMeasurement()
-//                                // Add new card to initiate next test.
-//                                testingAddCard()
-//                            }
-//                            Test.count++
-//                        } else { // HUAWEI
-//                            testingAddCard {
-//                                resetDocAndUI()
-//                            }
-//                        }
-                    // ===================================
+
+                    if (Build.VERSION.RELEASE == "9")
+                        broadcastMessage("SAMSUNG")
+                    else
+                        broadcastMessage("HUAWEI")
                 } else {
                     peerUpdateBuffer.pushUpdate(update)
                 }
@@ -117,6 +103,12 @@ class Automerge(
         }
     }
 
+    @Synchronized fun resetDoc(document: String, callback: (Unit)->Unit) {
+        val docEncoded = AndroidUtils.base64(document)
+        webview.evaluateJavascript("javascript:resetDoc(\"$docEncoded\");") {
+            callback(Unit)
+        }
+    }
 
     @Synchronized fun createNewDocument(update: PendingUpdate, groupName: String)  {
         webview.evaluateJavascript("javascript:createNewTodoList();") {
@@ -124,7 +116,6 @@ class Automerge(
                 if (it != "null" && it != null) {
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                     GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
-                    Test.initDoc = it.removeSurrounding("\"")
                     Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(it)}")
 
                 } else {
@@ -144,7 +135,6 @@ class Automerge(
                 if (it != "null" && it != null) {
                     GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
-                    Test.initDoc = it.removeSurrounding("\"")
                     Log.i(TAG, "Applied peerMerge! Doc is now ${GroupManager.getDocument(groupName)}")
                 } else {
                     peerMergeBuffer.pushUpdate(update)
@@ -179,6 +169,13 @@ class Automerge(
         val updateIntent = Intent()
         updateIntent.action = Jk.GROUP_MESSAGE.text
         updateIntent.putExtra(Jk.VALUE.text, groupName)
+        MainActivity.appContext?.sendBroadcast(updateIntent)
+    }
+
+    private fun broadcastMessage(action: String) {
+        val updateIntent = Intent()
+        updateIntent.action = action
+        updateIntent.putExtra(Jk.VALUE.text, action)
         MainActivity.appContext?.sendBroadcast(updateIntent)
     }
 

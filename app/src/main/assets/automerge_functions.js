@@ -102,3 +102,9 @@ let updateCardsUI = function(docPersisted) {
     let doc = getDoc("grp", docPersisted)
     ktchannel.onCardsChange(JSON.stringify(doc.cards))
 }
+
+let resetDoc = function (document) {
+    let docDecoded = atob(document)
+    let docLoaded = Automerge.load(docDecoded)
+    map.set("grp", docLoaded)
+}

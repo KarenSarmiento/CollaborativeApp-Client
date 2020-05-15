@@ -40,7 +40,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         Test.currMeasurement.receiveMessage = System.currentTimeMillis()
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Received message!")
+//            Log.d(TAG, "Received message!")
             Test.currMeasurement.decryptStart = System.currentTimeMillis()
             // Authenticate Message as having come from the genuine server.
             val encryptedMessage = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_MESSAGE.text) ?: return
@@ -194,7 +194,7 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      *  @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     private fun handleJsonUpdateMessage(message: JsonObject) {
-        Log.i(TAG, "Handling Json Update Message.")
+//        Log.i(TAG, "Handling Json Update Message.")
 
         // Authenticate message.
         val groupId = getStringOrNull(message, Jk.GROUP_ID.text) ?: return
@@ -420,10 +420,10 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
         sendBroadcast(updateIntent)
     }
 
-    override fun onMessageSent(s: String) {
-        super.onMessageSent(s)
-        Log.i(TAG, "*** Officially sent upstream message: $s")
-    }
+//    override fun onMessageSent(s: String) {
+//        super.onMessageSent(s)
+//        Log.i(TAG, "*** Officially sent upstream message: $s")
+//    }
 
     override fun onSendError(messageId : String, sendException: Exception) {
         Log.i(TAG, "Message failed to send: $messageId")

@@ -1,7 +1,6 @@
 package com.karensarmiento.collaborationapp
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
@@ -11,6 +10,7 @@ import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.os.Environment
+import android.util.Log
 import android.widget.ImageButton
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import kotlinx.android.synthetic.main.todo_entry_box.view.*
@@ -33,8 +33,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var automerge: Automerge
     private lateinit var jsonUpdateListener: BroadcastReceiver
     private lateinit var currentGroup: String
+
+    private lateinit var samsungListener: BroadcastReceiver
+    private lateinit var huaweiListener: BroadcastReceiver
+
     private val evalFile = File("${Environment.getExternalStorageDirectory()}/eval_measurements.txt")
-    private val NUM_RUNS = 10
+    private val MAX_RUNS = 50
+
+    private val longText = "Two exquisite objection delighted deficient yet its contained. Cordial because are account evident its subject but eat. Can properly followed learning prepared you doubtful yet him. Over many our good lady feet ask that. Expenses own moderate day fat trifling stronger sir domestic feelings. Itself at be answer always exeter up do. Though or my plenty uneasy do. Friendship so considered remarkably be to sentiments. Offered mention greater fifteen one promise because nor. Why denoting speaking fat"
+    private val cardText = longText
 
     companion object {
         private const val TAG = "MainActivity"
@@ -119,6 +126,69 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setUpAutomerge(callback: ((Unit) -> Unit)? = null) {
+        // The callback will by default be called by a BG thread; therefore we need to dispatch it
+        // to the UI thread.
+        automerge = Automerge(webview) {
+            runOnUiThread { updateCards(it) }
+        }
+        callback?.invoke(Unit)
+    }
+
+    private fun setUpButtonListeners() {
+        todo_entry_box.button_add_todo.setOnClickListener {
+            val todoText = todo_entry_box.text_entry.text.toString()
+            TodoAdder(automerge, currentGroup, todoText).execute()
+            todo_entry_box.text_entry.setText("")
+        }
+
+        store_init_doc.setOnClickListener {
+            Test.initDoc = GroupManager.getDocument(currentGroup)!!.removeSurrounding("\"")
+            Log.i(TAG, "Set init doc to: ${Test.initDoc}")
+        }
+    }
+
+    fun onCheckboxClicked(view: View) {
+        if (view is CheckBox) {
+            val index = layout_todos.indexOfChild(view.parent.parent.parent as ViewGroup)
+            TodoChecker(automerge, currentGroup, index, view.isChecked).execute()
+        }
+    }
+
+    private fun registerJsonUpdateListener() {
+        jsonUpdateListener = AndroidUtils.createSimpleBroadcastReceiver(
+            this, Jk.GROUP_MESSAGE.text) {
+            applyBufferedUpdates()
+        }
+
+        samsungListener = AndroidUtils.createSimpleBroadcastReceiver(this, "SAMSUNG") {
+            storeMeasurements()
+            if (Test.count > MAX_RUNS) {
+                Log.i(TAG, "Test over!")
+            } else {
+                // Reset document
+                automerge.resetDoc(Test.initDoc!!) {
+                    GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!.removeSurrounding("\""))
+                    runOnUiThread { updateCards(emptyList()) }
+                    Thread.sleep(500)
+                    // Start new test.
+                    addCardTest(cardText)
+                }
+                Test.count++
+            }
+        }
+
+        huaweiListener = AndroidUtils.createSimpleBroadcastReceiver(this, "HUAWEI") {
+            Test.initDoc?.let {initDoc ->
+                addCardTest(cardText)
+                automerge.resetDoc(initDoc) {
+                    GroupManager.setDocument(GroupManager.currentGroup!!, initDoc.removeSurrounding("\""))
+                    runOnUiThread { updateCards(emptyList()) }
+                }
+            }
+        }
+    }
+
     private fun storeMeasurements() {
         val data = "${Test.currMeasurement.start}," +
                 "${Test.currMeasurement.localMergeFromKotlinStart}," +
@@ -136,55 +206,12 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun testingAddCard(todoText: String = "", callback: ((Unit) -> Unit)? = null) {
+    private fun addCardTest(todoText: String) {
         Test.currMeasurement.start = System.currentTimeMillis()
-        // TODO: Ensure that this doesn't send a message across when testing.
-        automerge.addCard(currentGroup, Card(todoText, false))
+        TodoAdder(automerge, currentGroup, todoText).execute()
         todo_entry_box.text_entry.setText("")
     }
 
-    private fun resetDocAndUI() {
-        // Set document as empty.
-        GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!.removeSurrounding("\""))
-
-        // Update UI
-        runOnUiThread { updateCards(emptyList()) }
-    }
-
-    //==========================================================================================
-
-    private fun setUpAutomerge(callback: ((Unit) -> Unit)? = null) {
-        // The callback will by default be called by a BG thread; therefore we need to dispatch it
-        // to the UI thread.
-        automerge = Automerge(webview) {
-            runOnUiThread { updateCards(it) }
-        }
-        callback?.invoke(Unit)
-    }
-
-    private fun setUpButtonListeners() {
-        todo_entry_box.button_add_todo.setOnClickListener {
-            val todoText = todo_entry_box.text_entry.text.toString()
-            TodoAdder(automerge, currentGroup, todoText).execute()
-            todo_entry_box.text_entry.setText("")
-        }
-    }
-
-    fun onCheckboxClicked(view: View) {
-        if (view is CheckBox) {
-            val index = layout_todos.indexOfChild(view.parent.parent.parent as ViewGroup)
-            TodoChecker(automerge, currentGroup, index, view.isChecked).execute()
-        }
-    }
-
-    private fun registerJsonUpdateListener() {
-        jsonUpdateListener = AndroidUtils.createSimpleBroadcastReceiver(
-            this, Jk.GROUP_MESSAGE.text) {
-            applyBufferedUpdates()
-        }
-    }
-
-    // TODO: Recreating cards is inefficient. Use RecyclerView with a proper adapter instead.
     private fun updateCards(cards: List<Card>) {
         layout_todos.removeAllViewsInLayout()
         cards.forEach { card ->
@@ -212,5 +239,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(jsonUpdateListener)
+        unregisterReceiver(samsungListener)
+        unregisterReceiver(huaweiListener)
     }
 }

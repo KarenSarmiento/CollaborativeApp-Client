@@ -35,7 +35,6 @@ object FirebaseMessageSendingService {
         // Send changes to peers.
         val changes = GroupManager.getChanges(GroupManager.groupName(groupId)!!)!!
         changes.forEach { change ->
-            Test.currMeasurement.encryptStart = System.currentTimeMillis()
             val request = Json.createObjectBuilder()
                 .add(Jk.PEER_TYPE.text, Jk.CHANGES.text)
                 .add(Jk.GROUP_ID.text, groupId)
@@ -107,7 +106,7 @@ object FirebaseMessageSendingService {
         // Send request to server.
         val messageId = AccountUtils.getUniqueId()
         sendEncryptedServerRequest(request, messageId)
-        Log.i(TAG, "Sent message to device group: $messageId")
+//        Log.i(TAG, "Sent message to device group: $messageId")
     }
 
     fun sendCreateGroupRequest(groupName: String, peerEmails: Set<String>) {
