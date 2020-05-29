@@ -2,12 +2,10 @@ package com.karensarmiento.collaborationapp.collaboration
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
-import com.karensarmiento.collaborationapp.MainActivity
 import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
@@ -89,9 +87,10 @@ class Automerge(
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                     Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
 
-                    if (Build.VERSION.RELEASE == "9")
+                    val myEmail = AccountUtils.getGoogleEmail()
+                    if (myEmail == "karen.sarmiento25@gmail.com")
                         broadcastMessage("SAMSUNG")
-                    else
+                    else if (myEmail == "marcoselvatici98@gmail.com")
                         broadcastMessage("HUAWEI")
                 } else {
                     peerUpdateBuffer.pushUpdate(update)
@@ -162,7 +161,11 @@ class Automerge(
         GroupManager.setDocument(groupName, updatedDoc!!)
         GroupManager.addChange(groupName, changes!!.toString())
         GroupManager.unlock(groupName)
-        FirebaseMessageSendingService.sendJsonUpdateToCurrentDeviceGroup(changes.toString())
+        // TODO: Add group members in added to group message?
+//        if (GroupManager.getMembers(groupName)!!.isNotEmpty())
+        Test.initDoc?.let {
+            FirebaseMessageSendingService.sendJsonUpdateToCurrentDeviceGroup(changes.toString())
+        }
     }
 
     private fun broadcastBufferUpdates(groupName: String) {

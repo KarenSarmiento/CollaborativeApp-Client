@@ -10,7 +10,7 @@ import android.widget.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.android.synthetic.main.activity_device_group.*
-import com.karensarmiento.collaborationapp.MainActivity
+import com.karensarmiento.collaborationapp.collaboration.MainActivity
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.grouping.GroupManager.maybeSetCurrentGroup
 import com.karensarmiento.collaborationapp.utils.AndroidUtils

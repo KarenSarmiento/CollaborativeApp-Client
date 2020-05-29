@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
-import com.karensarmiento.collaborationapp.MainActivity
+import com.karensarmiento.collaborationapp.collaboration.MainActivity
 import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.utils.AndroidUtils
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk

@@ -1,4 +1,4 @@
-package com.karensarmiento.collaborationapp
+package com.karensarmiento.collaborationapp.collaboration
 
 import android.os.Bundle
 import android.view.View
@@ -17,13 +17,11 @@ import kotlinx.android.synthetic.main.todo_entry_box.view.*
 import com.karensarmiento.collaborationapp.utils.JsonKeyword as Jk
 import android.view.Menu
 import android.view.MenuItem
-import com.karensarmiento.collaborationapp.collaboration.*
-import com.karensarmiento.collaborationapp.collaboration.Automerge
-import com.karensarmiento.collaborationapp.collaboration.Card
 import com.karensarmiento.collaborationapp.grouping.GroupSettingsActivity
 import com.karensarmiento.collaborationapp.utils.AndroidUtils
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.karensarmiento.collaborationapp.R
 import com.karensarmiento.collaborationapp.evaluation.Test
 import java.io.File
 
@@ -38,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var huaweiListener: BroadcastReceiver
 
     private val evalFile = File("${Environment.getExternalStorageDirectory()}/eval_measurements.txt")
-    private val MAX_RUNS = 50
+    private val MAX_RUNS = 500
 
     private val longText = "Two exquisite objection delighted deficient yet its contained. Cordial because are account evident its subject but eat. Can properly followed learning prepared you doubtful yet him. Over many our good lady feet ask that. Expenses own moderate day fat trifling stronger sir domestic feelings. Itself at be answer always exeter up do. Though or my plenty uneasy do. Friendship so considered remarkably be to sentiments. Offered mention greater fifteen one promise because nor. Why denoting speaking fat"
     private val cardText = longText
@@ -146,6 +144,18 @@ class MainActivity : AppCompatActivity() {
             Test.initDoc = GroupManager.getDocument(currentGroup)!!.removeSurrounding("\"")
             Log.i(TAG, "Set init doc to: ${Test.initDoc}")
         }
+
+        insert_50_todos.setOnClickListener {
+            for (i in 1..50) {
+                TodoAdder(automerge, currentGroup, i.toString()).execute()
+            }
+        }
+        tick_25_todos.setOnClickListener {
+            for (i in 0..25) {
+                TodoChecker(automerge, currentGroup, i, true).execute()
+            }
+
+        }
     }
 
     fun onCheckboxClicked(view: View) {
@@ -174,7 +184,6 @@ class MainActivity : AppCompatActivity() {
                     // Start new test.
                     addCardTest(cardText)
                 }
-                Test.count++
             }
         }
 
@@ -190,6 +199,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun storeMeasurements() {
+        Test.count++
         val data = "${Test.currMeasurement.start}," +
                 "${Test.currMeasurement.localMergeFromKotlinStart}," +
                 "${Test.currMeasurement.localMergeFromKotlinEnd}," +

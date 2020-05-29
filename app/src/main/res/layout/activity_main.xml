@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="8dp"
-    tools:context=".MainActivity">
+    tools:context=".collaboration.MainActivity">
 
     <WebView
         android:id="@+id/webview"
@@ -19,6 +19,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Store Test.init" />
+
+    <Button
+        android:id="@+id/insert_50_todos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Insert 50 todos" />
+
+    <Button
+        android:id="@+id/tick_25_todos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tick 25 todos" />
 
     <include
         layout="@layout/todo_entry_box"

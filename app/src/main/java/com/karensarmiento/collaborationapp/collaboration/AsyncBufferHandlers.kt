@@ -3,7 +3,10 @@ package com.karensarmiento.collaborationapp.collaboration
 import android.os.AsyncTask
 import android.util.Log
 import com.karensarmiento.collaborationapp.grouping.GroupManager
+import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
+import com.karensarmiento.collaborationapp.utils.AccountUtils
 import com.karensarmiento.collaborationapp.utils.JsonKeyword
+import javax.json.Json
 
 
 class DocInitHandler(val automerge: Automerge, private val docInit: PendingUpdate) : AsyncTask<Void, Void, Void>() {
@@ -76,6 +79,27 @@ class PeerUpdateHandler(val automerge: Automerge, private val peerUpdate: Pendin
             GroupManager.unlock(peerUpdate.groupName)
             peerUpdateBuffer.pushUpdate(peerUpdate)
         }
+    }
+
+}
+
+class SendPeerChange(private val groupId: String, val change: String, private val peerEmail: String)
+    : AsyncTask<Void, Void, Void>() {
+
+    val TAG = "SendPeerChange"
+
+    override fun doInBackground(vararg params: Void): Void? {
+        Thread.sleep(500)
+        val request = Json.createObjectBuilder()
+            .add(JsonKeyword.PEER_TYPE.text, JsonKeyword.CHANGES.text)
+            .add(JsonKeyword.GROUP_ID.text, groupId)
+            .add(JsonKeyword.CHANGES.text, change)
+            .build().toString()
+        val mId = AccountUtils.getUniqueId()
+        FirebaseMessageSendingService.sendEncryptedPeerMessage(request, peerEmail, mId)
+        Log.i(TAG, "Sent a changes to peer: $mId")
+
+        return null
     }
 
 }

@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:paddingBottom="4dp"
-    tools:context=".MainActivity">
+    tools:context=".collaboration.MainActivity">
 
         <LinearLayout
             android:id="@+id/todo_entry_layout"

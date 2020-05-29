@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:paddingBottom="4dp"
     android:clickable="true"
-    tools:context=".MainActivity"
+    tools:context=".collaboration.MainActivity"
     android:focusable="true">
 
     <com.google.android.material.card.MaterialCardView

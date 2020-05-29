@@ -3,6 +3,7 @@ package com.karensarmiento.collaborationapp.messaging
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
+import com.karensarmiento.collaborationapp.collaboration.SendPeerChange
 import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.utils.AccountUtils
@@ -35,15 +36,7 @@ object FirebaseMessageSendingService {
         // Send changes to peers.
         val changes = GroupManager.getChanges(GroupManager.groupName(groupId)!!)!!
         changes.forEach { change ->
-            val request = Json.createObjectBuilder()
-                .add(Jk.PEER_TYPE.text, Jk.CHANGES.text)
-                .add(Jk.GROUP_ID.text, groupId)
-                .add(Jk.GROUP_ID.text, groupId)
-                .add(Jk.CHANGES.text, change)
-                .build().toString()
-            val mId = AccountUtils.getUniqueId()
-            sendEncryptedPeerMessage(request, peerEmail, mId)
-            Log.i(TAG, "Sent a changes to peer: $mId")
+            SendPeerChange(groupId, change, peerEmail).execute()
         }
         Log.i(TAG, "Sent all document changes to peer.")
     }
@@ -167,7 +160,7 @@ object FirebaseMessageSendingService {
         Log.i(TAG, "Sent remove peer from group request to server: $messageId")
     }
 
-    private fun sendEncryptedPeerMessage(request: String, peerEmail: String, messageId: String) {
+    fun sendEncryptedPeerMessage(request: String, peerEmail: String, messageId: String) {
         // Encrypt request.
         val peerKey = AddressBook.getContactKey(peerEmail) ?: return
         val aesKey = EncryptionManager.generateKeyAESGCM()
