@@ -9,7 +9,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.os.Environment
 import android.util.Log
 import android.widget.ImageButton
 import com.karensarmiento.collaborationapp.grouping.GroupManager
@@ -22,8 +21,6 @@ import com.karensarmiento.collaborationapp.utils.AndroidUtils
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.karensarmiento.collaborationapp.R
-import com.karensarmiento.collaborationapp.evaluation.Test
-import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
@@ -31,15 +28,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var automerge: Automerge
     private lateinit var jsonUpdateListener: BroadcastReceiver
     private lateinit var currentGroup: String
-
-    private lateinit var samsungListener: BroadcastReceiver
-    private lateinit var huaweiListener: BroadcastReceiver
-
-    private val evalFile = File("${Environment.getExternalStorageDirectory()}/eval_measurements.txt")
-    private val MAX_RUNS = 500
-
-    private val longText = "Two exquisite objection delighted deficient yet its contained. Cordial because are account evident its subject but eat. Can properly followed learning prepared you doubtful yet him. Over many our good lady feet ask that. Expenses own moderate day fat trifling stronger sir domestic feelings. Itself at be answer always exeter up do. Though or my plenty uneasy do. Friendship so considered remarkably be to sentiments. Offered mention greater fifteen one promise because nor. Why denoting speaking fat"
-    private val cardText = longText
 
     companion object {
         private const val TAG = "MainActivity"
@@ -103,25 +91,31 @@ class MainActivity : AppCompatActivity() {
     private fun handleBufferedDocInits() {
         while (docInitBuffer.hasPendingUpdates()) {
             for (docInit in docInitBuffer.popPendingUpdates()) {
+                Log.i(TAG, "Applying Doc init: $docInit")
                 DocInitHandler(automerge, docInit).execute()
             }
         }
+        Log.i(TAG, "Doc init: ${docInitBuffer.getPendingUpdates()}")
     }
 
     private fun handleBufferedPeerMerges() {
         while (peerMergeBuffer.hasPendingUpdates()) {
             for (peerMerge in peerMergeBuffer.popPendingUpdates()) {
+                Log.i(TAG, "Applying peer merge: $peerMerge")
                 PeerMergeHandler(automerge, peerMerge).execute()
             }
         }
+        Log.i(TAG, "Peer merges: ${peerMergeBuffer.getPendingUpdates()}")
     }
 
     private fun handleBufferedPeerUpdates() {
         if (peerUpdateBuffer.hasPendingUpdates()) {
             for (peerUpdate in peerUpdateBuffer.popPendingUpdates()) {
+                Log.i(TAG, "Applying peer update: $peerUpdate")
                 PeerUpdateHandler(automerge, peerUpdate).execute()
             }
         }
+        Log.i(TAG, "Peer update: ${peerUpdateBuffer.getPendingUpdates()}")
     }
 
     private fun setUpAutomerge(callback: ((Unit) -> Unit)? = null) {
@@ -139,23 +133,6 @@ class MainActivity : AppCompatActivity() {
             TodoAdder(automerge, currentGroup, todoText).execute()
             todo_entry_box.text_entry.setText("")
         }
-
-        store_init_doc.setOnClickListener {
-            Test.initDoc = GroupManager.getDocument(currentGroup)!!.removeSurrounding("\"")
-            Log.i(TAG, "Set init doc to: ${Test.initDoc}")
-        }
-
-        insert_50_todos.setOnClickListener {
-            for (i in 1..50) {
-                TodoAdder(automerge, currentGroup, i.toString()).execute()
-            }
-        }
-        tick_25_todos.setOnClickListener {
-            for (i in 0..25) {
-                TodoChecker(automerge, currentGroup, i, true).execute()
-            }
-
-        }
     }
 
     fun onCheckboxClicked(view: View) {
@@ -170,57 +147,8 @@ class MainActivity : AppCompatActivity() {
             this, Jk.GROUP_MESSAGE.text) {
             applyBufferedUpdates()
         }
-
-        samsungListener = AndroidUtils.createSimpleBroadcastReceiver(this, "SAMSUNG") {
-            storeMeasurements()
-            if (Test.count > MAX_RUNS) {
-                Log.i(TAG, "Test over!")
-            } else {
-                // Reset document
-                automerge.resetDoc(Test.initDoc!!) {
-                    GroupManager.setDocument(GroupManager.currentGroup!!, Test.initDoc!!.removeSurrounding("\""))
-                    runOnUiThread { updateCards(emptyList()) }
-                    Thread.sleep(500)
-                    // Start new test.
-                    addCardTest(cardText)
-                }
-            }
-        }
-
-        huaweiListener = AndroidUtils.createSimpleBroadcastReceiver(this, "HUAWEI") {
-            Test.initDoc?.let {initDoc ->
-                addCardTest(cardText)
-                automerge.resetDoc(initDoc) {
-                    GroupManager.setDocument(GroupManager.currentGroup!!, initDoc.removeSurrounding("\""))
-                    runOnUiThread { updateCards(emptyList()) }
-                }
-            }
-        }
     }
 
-    private fun storeMeasurements() {
-        Test.count++
-        val data = "${Test.currMeasurement.start}," +
-                "${Test.currMeasurement.localMergeFromKotlinStart}," +
-                "${Test.currMeasurement.localMergeFromKotlinEnd}," +
-                "${Test.currMeasurement.encryptStart}," +
-                "${Test.currMeasurement.encryptEnd}," +
-                "${Test.currMeasurement.sendMessage}," +
-                "${Test.currMeasurement.receiveMessage}," +
-                "${Test.currMeasurement.decryptStart}," +
-                "${Test.currMeasurement.decryptEnd}," +
-                "${Test.currMeasurement.peerMergeFromKotlinStart}," +
-                "${Test.currMeasurement.peerMergeFromKotlinEnd}\n"
-        Log.i(TAG, "*TEST ${Test.count}: $data")
-        evalFile.appendText(data)
-    }
-
-
-    private fun addCardTest(todoText: String) {
-        Test.currMeasurement.start = System.currentTimeMillis()
-        TodoAdder(automerge, currentGroup, todoText).execute()
-        todo_entry_box.text_entry.setText("")
-    }
 
     private fun updateCards(cards: List<Card>) {
         layout_todos.removeAllViewsInLayout()
@@ -249,7 +177,5 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(jsonUpdateListener)
-        unregisterReceiver(samsungListener)
-        unregisterReceiver(huaweiListener)
     }
 }

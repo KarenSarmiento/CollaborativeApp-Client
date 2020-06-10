@@ -4,7 +4,6 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
 import com.karensarmiento.collaborationapp.collaboration.SendPeerChange
-import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.utils.AccountUtils
 import com.karensarmiento.collaborationapp.grouping.GroupManager
@@ -79,7 +78,6 @@ object FirebaseMessageSendingService {
     }
 
     private fun sendJsonUpdateToDeviceGroup(groupName: String, jsonUpdate: String) {
-        Test.currMeasurement.encryptStart = System.currentTimeMillis()
         // Encrypt json update and create digital signature.
         val groupKey = GroupManager.getCurrentGroupKey() ?: return
         val encryptedUpdate = EncryptionManager.encryptAESGCM(jsonUpdate, groupKey)
@@ -201,8 +199,6 @@ object FirebaseMessageSendingService {
 
         // Send encrypted request with or without digital useSignature.
         if (useSignature) {
-            Test.currMeasurement.encryptEnd = System.currentTimeMillis()
-
             val signature = EncryptionManager.createDigitalSignature(encryptedRequest)
             FirebaseMessaging.getInstance().send(
                 RemoteMessage.Builder("${AccountUtils.SENDER_ID}@fcm.googleapis.com")
@@ -223,6 +219,5 @@ object FirebaseMessageSendingService {
                     .addData(Jk.EMAIL.text, AccountUtils.getGoogleEmail())
                     .build())
         }
-        Test.currMeasurement.sendMessage = System.currentTimeMillis()
     }
 }

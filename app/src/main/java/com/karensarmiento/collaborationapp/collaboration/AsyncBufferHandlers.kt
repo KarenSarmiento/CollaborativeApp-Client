@@ -89,7 +89,6 @@ class SendPeerChange(private val groupId: String, val change: String, private va
     val TAG = "SendPeerChange"
 
     override fun doInBackground(vararg params: Void): Void? {
-        Thread.sleep(500)
         val request = Json.createObjectBuilder()
             .add(JsonKeyword.PEER_TYPE.text, JsonKeyword.CHANGES.text)
             .add(JsonKeyword.GROUP_ID.text, groupId)

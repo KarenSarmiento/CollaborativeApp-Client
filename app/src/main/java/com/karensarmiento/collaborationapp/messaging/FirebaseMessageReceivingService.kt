@@ -8,7 +8,6 @@ import com.karensarmiento.collaborationapp.collaboration.docInitBuffer
 import com.karensarmiento.collaborationapp.collaboration.unencryptedUpdateBuffer
 import com.karensarmiento.collaborationapp.collaboration.peerMergeBuffer
 import com.karensarmiento.collaborationapp.collaboration.peerUpdateBuffer
-import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.security.AddressBook
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.security.EncryptionManager
@@ -37,11 +36,9 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
      * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Test.currMeasurement.receiveMessage = System.currentTimeMillis()
         // Handle data payload if one exists.
         remoteMessage.data.isNotEmpty().let {
-//            Log.d(TAG, "Received message!")
-            Test.currMeasurement.decryptStart = System.currentTimeMillis()
+            Log.d(TAG, "Received message!")
             // Authenticate Message as having come from the genuine server.
             val encryptedMessage = getStringOrNullFromMap(remoteMessage.data, Jk.ENC_MESSAGE.text) ?: return
             val signature = getStringOrNullFromMap(remoteMessage.data, Jk.SIGNATURE.text) ?: return
@@ -221,7 +218,6 @@ class FirebaseMessageReceivingService : FirebaseMessagingService() {
             return
         }
         val decryptedUpdate = EncryptionManager.decryptAESGCM(encryptedMessage, groupKey)
-        Test.currMeasurement.decryptEnd = System.currentTimeMillis()
         // Apply the update.
         peerUpdateBuffer.pushUpdate(groupName, decryptedUpdate)
         GroupManager.addChange(groupName, decryptedUpdate)

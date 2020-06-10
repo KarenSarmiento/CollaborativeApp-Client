@@ -6,7 +6,6 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
-import com.karensarmiento.collaborationapp.evaluation.Test
 import com.karensarmiento.collaborationapp.grouping.GroupManager
 import com.karensarmiento.collaborationapp.messaging.FirebaseMessageSendingService
 import com.karensarmiento.collaborationapp.utils.*
@@ -48,13 +47,11 @@ class Automerge(
      * accessed through the use of a functional callback.
      */
     @Synchronized fun addCard(groupName: String, card: Card) {
-        Test.currMeasurement.localMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         val titleEncoded = AndroidUtils.base64(card.title)
         webview.evaluateJavascript(
             "javascript:addCard(\"$docEncoded\", \"$titleEncoded\", ${card.completed});") {
-            Test.currMeasurement.localMergeFromKotlinEnd = System.currentTimeMillis()
             handleLocalUpdateOutput(it, groupName)
         }
     }
@@ -77,35 +74,19 @@ class Automerge(
     }
 
     @Synchronized fun applyJsonUpdate(update: PendingUpdate, groupName: String, jsonUpdate: String) {
-        Test.currMeasurement.peerMergeFromKotlinStart = System.currentTimeMillis()
         val document = GroupManager.getDocument(groupName)!!
         val docEncoded = AndroidUtils.base64(document)
         val updateEncoded = AndroidUtils.base64(jsonUpdate)
         webview.evaluateJavascript("javascript:applyJsonUpdate(\"$docEncoded\", \"$updateEncoded\");") {
             try {
-                if (it != "null" && it != null) {
+                if (it != "null" && it != null)
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
-                    Test.currMeasurement.peerMergeFromKotlinEnd = System.currentTimeMillis()
-
-                    val myEmail = AccountUtils.getGoogleEmail()
-                    if (myEmail == "karen.sarmiento25@gmail.com")
-                        broadcastMessage("SAMSUNG")
-                    else if (myEmail == "marcoselvatici98@gmail.com")
-                        broadcastMessage("HUAWEI")
-                } else {
+                else
                     peerUpdateBuffer.pushUpdate(update)
-                }
             } finally {
                 GroupManager.unlock(groupName)
                 broadcastBufferUpdates(groupName)
             }
-        }
-    }
-
-    @Synchronized fun resetDoc(document: String, callback: (Unit)->Unit) {
-        val docEncoded = AndroidUtils.base64(document)
-        webview.evaluateJavascript("javascript:resetDoc(\"$docEncoded\");") {
-            callback(Unit)
         }
     }
 
@@ -115,7 +96,7 @@ class Automerge(
                 if (it != "null" && it != null) {
                     GroupManager.setDocument(groupName, it.removeSurrounding("\""))
                     GroupManager.setInitDocument(groupName, it.removeSurrounding("\""))
-                    Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(it)}")
+                    Log.i(TAG, "Applied doc init! Doc is now ${GroupManager.getDocument(groupName)}")
 
                 } else {
                     docInitBuffer.pushUpdate(update)
@@ -162,23 +143,13 @@ class Automerge(
         GroupManager.addChange(groupName, changes!!.toString())
         GroupManager.unlock(groupName)
         // TODO: Add group members in added to group message?
-//        if (GroupManager.getMembers(groupName)!!.isNotEmpty())
-        Test.initDoc?.let {
-            FirebaseMessageSendingService.sendJsonUpdateToCurrentDeviceGroup(changes.toString())
-        }
+        FirebaseMessageSendingService.sendJsonUpdateToCurrentDeviceGroup(changes.toString())
     }
 
     private fun broadcastBufferUpdates(groupName: String) {
         val updateIntent = Intent()
         updateIntent.action = Jk.GROUP_MESSAGE.text
         updateIntent.putExtra(Jk.VALUE.text, groupName)
-        MainActivity.appContext?.sendBroadcast(updateIntent)
-    }
-
-    private fun broadcastMessage(action: String) {
-        val updateIntent = Intent()
-        updateIntent.action = action
-        updateIntent.putExtra(Jk.VALUE.text, action)
         MainActivity.appContext?.sendBroadcast(updateIntent)
     }
 
